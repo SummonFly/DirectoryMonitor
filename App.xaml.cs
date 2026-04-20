@@ -1,4 +1,6 @@
 ﻿using DirectoryMonitor.Data;
+using DirectoryMonitor.Services;
+using DirectoryMonitor.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +30,8 @@ namespace DirectoryMonitor
             // Setup DI
             var services = new ServiceCollection();
             ConfigureServices(services);
+
+            services.AddSingleton<IWatcherManager, WatcherManager>();
             _serviceProvider = services.BuildServiceProvider();
 
             // Auto-migrate database

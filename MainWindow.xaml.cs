@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using DirectoryMonitor.Services;
+using DirectoryMonitor.Services.Interfaces;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -16,9 +18,32 @@ namespace DirectoryMonitor
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+
+        private readonly IWatcherManager _watcherManager;
+        public MainWindow(IWatcherManager watcherManager)
         {
             InitializeComponent();
+            _watcherManager = watcherManager;
+
+            // Temporary test
+            Loaded += async (s, e) =>
+            {
+                var testPath = new Models.Entities.WatchedPath
+                {
+                    Path = @"C:\Temp", // Change to an existing folder!
+                    IsActive = true,
+                    IncludeSubdirectories = false
+                };
+
+                await _watcherManager.StartWatchingAsync(testPath);
+                _watcherManager.FileEvent += (sender, args) =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show($"Event: {args.ChangeType} - {args.FullPath}");
+                    });
+                };
+            };
         }
     }
 }
