@@ -1,4 +1,5 @@
-﻿using DirectoryMonitor.Models.Entities;
+﻿using DirectoryMonitor.Data.Repositories;
+using DirectoryMonitor.Models.Entities;
 using DirectoryMonitor.Services.Interfaces;
 using System.Collections.Concurrent;
 using System.IO;
@@ -8,12 +9,20 @@ namespace DirectoryMonitor.Services
     public class WatcherManager : IWatcherManager
     {
         private readonly ConcurrentDictionary<int, FileSystemWatcherWrapper> _watchers = new();
+        private readonly IJournalService _journalService;
+        private readonly IWatchedPathRepository _watchedPathRepository;
 
         public event EventHandler<FileSystemEventArgs>? FileEvent;
 
-        public Task StartWatchingAsync(WatchedPath watchedPath)
+        public WatcherManager(IJournalService journalService, IWatchedPathRepository watchedPathRepository)
         {
-            return Task.Run(() =>
+            _journalService = journalService;
+            _watchedPathRepository = watchedPathRepository;
+        }
+
+        public async Task StartWatchingAsync(WatchedPath watchedPath)
+        {
+            await Task.Run(() =>
             {
                 if (_watchers.ContainsKey(watchedPath.Id))
                 {
@@ -26,41 +35,42 @@ namespace DirectoryMonitor.Services
                     watchedPath.FileExtensionsFilter
                 );
 
-                wrapper.FileEvent += OnFileEvent;
+                wrapper.FileEvent += async (s, e) => await OnFileEvent(e, watchedPath.Id);
                 wrapper.Start();
 
                 _watchers[watchedPath.Id] = wrapper;
             });
         }
 
-        public Task StopWatchingAsync(int watchedPathId)
+        public async Task StopWatchingAsync(int watchedPathId)
         {
-            return Task.Run(() =>
+            await Task.Run(() =>
             {
                 if (_watchers.TryRemove(watchedPathId, out var wrapper))
                 {
-                    wrapper.FileEvent -= OnFileEvent;
+                    wrapper.FileEvent -= async (s, e) => await OnFileEvent(e, watchedPathId);
                     wrapper.Stop();
                     wrapper.Dispose();
                 }
             });
         }
 
-        public Task StartAllAsync()
+        public async Task StartAllAsync()
         {
-            // Will be implemented after repository integration
-            return Task.CompletedTask;
+            var activePaths = await _watchedPathRepository.GetActiveAsync();
+            foreach (var path in activePaths)
+            {
+                await StartWatchingAsync(path);
+            }
         }
 
-        public Task StopAllAsync()
+        public async Task StopAllAsync()
         {
-            return Task.Run(() =>
+            var activePaths = await _watchedPathRepository.GetActiveAsync();
+            foreach (var path in activePaths)
             {
-                foreach (var id in _watchers.Keys)
-                {
-                    StopWatchingAsync(id).Wait();
-                }
-            });
+                await StopWatchingAsync(path.Id);
+            }
         }
 
         public bool IsWatching(int watchedPathId)
@@ -68,8 +78,18 @@ namespace DirectoryMonitor.Services
             return _watchers.ContainsKey(watchedPathId);
         }
 
-        private void OnFileEvent(object? sender, FileSystemEventArgs e)
+        private async Task OnFileEvent(FileSystemEventArgs e, int watchedPathId)
         {
+            string eventType = e.ChangeType.ToString();
+            string? oldPath = null;
+
+            if (e is RenamedEventArgs renamed)
+            {
+                oldPath = renamed.OldFullPath;
+            }
+
+            await _journalService.LogEventAsync(e.FullPath, eventType, oldPath, watchedPathId);
+
             FileEvent?.Invoke(this, e);
         }
     }

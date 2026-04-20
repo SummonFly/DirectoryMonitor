@@ -20,25 +20,27 @@ namespace DirectoryMonitor
     {
 
         private readonly IWatcherManager _watcherManager;
-        public MainWindow(IWatcherManager watcherManager)
+        private readonly IJournalService _journalService;
+
+        public MainWindow(IWatcherManager watcherManager, IJournalService journalService)
         {
             InitializeComponent();
             _watcherManager = watcherManager;
+            _journalService = journalService;
 
-            // Temporary test
             Loaded += async (s, e) =>
             {
-                var testPath = new Models.Entities.WatchedPath
-                {
-                    Path = @"C:\Temp", // Change to an existing folder!
-                    IsActive = true,
-                    IncludeSubdirectories = false
-                };
+                // Test: show recent events count
+                var recentEvents = await _journalService.GetRecentEventsAsync(5);
+                MessageBox.Show($"Recent events in DB: {recentEvents.Count}");
 
-                await _watcherManager.StartWatchingAsync(testPath);
-                _watcherManager.FileEvent += (sender, args) =>
+                // Start all watchers
+                await _watcherManager.StartAllAsync();
+
+                // Subscribe to events
+                _watcherManager.FileEvent += async (sender, args) =>
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(() =>
                     {
                         MessageBox.Show($"Event: {args.ChangeType} - {args.FullPath}");
                     });

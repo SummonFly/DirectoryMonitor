@@ -1,4 +1,5 @@
 ﻿using DirectoryMonitor.Data;
+using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Services;
 using DirectoryMonitor.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,14 @@ namespace DirectoryMonitor
             var connectionString = _configuration!.GetConnectionString("DefaultConnection");
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite(connectionString));
+
+            // Repositories
+            services.AddScoped<IWatchedPathRepository, WatchedPathRepository>();
+            services.AddScoped<IEventLogRepository, EventLogRepository>();
+
+            // Services
+            services.AddSingleton<IJournalService, JournalService>();
+            services.AddSingleton<IWatcherManager, WatcherManager>();
 
             // Main window
             services.AddSingleton<MainWindow>();
