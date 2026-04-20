@@ -1,5 +1,6 @@
 ﻿using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Models.Entities;
+using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.Services.Interfaces;
 
 namespace DirectoryMonitor.Services
@@ -13,7 +14,7 @@ namespace DirectoryMonitor.Services
             _eventLogRepository = eventLogRepository;
         }
 
-        public async Task LogEventAsync(string path, string eventType, string? oldPath = null, int? watchedPathId = null)
+        public async Task LogEventAsync(string path, EventType eventType, string? oldPath = null, int? watchedPathId = null)
         {
             var entry = new EventLogEntry
             {
@@ -32,7 +33,7 @@ namespace DirectoryMonitor.Services
             return await _eventLogRepository.GetRecentAsync(count);
         }
 
-        public async Task<List<EventLogEntry>> GetFilteredEventsAsync(string? eventType, string? searchPath, DateTime? from, DateTime? to)
+        public async Task<List<EventLogEntry>> GetFilteredEventsAsync(EventType? eventType, string? searchPath, DateTime? from, DateTime? to)
         {
             return await _eventLogRepository.GetByFilterAsync(eventType, searchPath, from, to);
         }

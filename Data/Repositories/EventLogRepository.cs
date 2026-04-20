@@ -1,4 +1,5 @@
 ﻿using DirectoryMonitor.Models.Entities;
+using DirectoryMonitor.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace DirectoryMonitor.Data.Repositories
@@ -28,15 +29,15 @@ namespace DirectoryMonitor.Data.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<EventLogEntry>> GetByFilterAsync(string? eventType, string? searchPath, DateTime? from, DateTime? to)
+        public async Task<List<EventLogEntry>> GetByFilterAsync(EventType? eventType, string? searchPath, DateTime? from, DateTime? to)
         {
             var query = _context.EventLogEntries
                 .Include(e => e.WatchedPath)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(eventType))
+            if (eventType.HasValue)
             {
-                query = query.Where(e => e.EventType == eventType);
+                query = query.Where(e => e.EventType == eventType.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(searchPath))

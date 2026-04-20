@@ -1,5 +1,6 @@
 ﻿using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Models.Entities;
+using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.Services.Interfaces;
 using System.Collections.Concurrent;
 using System.IO;
@@ -78,9 +79,28 @@ namespace DirectoryMonitor.Services
             return _watchers.ContainsKey(watchedPathId);
         }
 
+
+        private readonly IRuleEngine _ruleEngine;
+
+        public WatcherManager(IJournalService journalService, IWatchedPathRepository watchedPathRepository, IRuleEngine ruleEngine)
+        {
+            _journalService = journalService;
+            _watchedPathRepository = watchedPathRepository;
+            _ruleEngine = ruleEngine;
+        }
+
         private async Task OnFileEvent(FileSystemEventArgs e, int watchedPathId)
         {
-            string eventType = e.ChangeType.ToString();
+            // Convert WatcherChangeTypes to our EventType enum
+            EventType eventType = e.ChangeType switch
+            {
+                WatcherChangeTypes.Created => EventType.Created,
+                WatcherChangeTypes.Changed => EventType.Changed,
+                WatcherChangeTypes.Deleted => EventType.Deleted,
+                WatcherChangeTypes.Renamed => EventType.Renamed,
+                _ => EventType.Changed
+            };
+
             string? oldPath = null;
 
             if (e is RenamedEventArgs renamed)
@@ -89,6 +109,9 @@ namespace DirectoryMonitor.Services
             }
 
             await _journalService.LogEventAsync(e.FullPath, eventType, oldPath, watchedPathId);
+
+            // Execute rules
+            await _ruleEngine.EvaluateAndExecuteAsync(e, watchedPathId);
 
             FileEvent?.Invoke(this, e);
         }

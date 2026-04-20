@@ -3,6 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:DirectoryMonitor">
     <Application.Resources>
-         
+        <ContextMenu x:Key="TrayMenu">
+            <MenuItem Header="Show Window" Command="{Binding ShowWindowCommand}"/>
+            <Separator/>
+            <MenuItem Header="Exit" Command="{Binding ExitCommand}"/>
+        </ContextMenu>
     </Application.Resources>
 </Application>

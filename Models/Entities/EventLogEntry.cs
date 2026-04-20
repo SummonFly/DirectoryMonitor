@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using DirectoryMonitor.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace DirectoryMonitor.Models.Entities
 {
@@ -14,7 +15,7 @@ namespace DirectoryMonitor.Models.Entities
         public string Path { get; set; } = string.Empty;
 
         [Required]
-        public string EventType { get; set; } = string.Empty;
+        public EventType EventType { get; set; }
 
         public string? OldPath { get; set; }
 
