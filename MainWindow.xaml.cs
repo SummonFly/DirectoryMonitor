@@ -8,11 +8,35 @@ namespace DirectoryMonitor
     /// </summary>
     public partial class MainWindow : Window
     {
+        private readonly MainWindowViewModel _mainViewModel;
+        private readonly RulesViewModel _rulesViewModel;
+        private readonly RuleLogViewModel _ruleLogViewModel;
 
-        public MainWindow(MainWindowViewModel viewModel)
+        public MainWindow(
+            MainWindowViewModel mainViewModel,
+            RulesViewModel rulesViewModel,
+            RuleLogViewModel ruleLogViewModel)
         {
             InitializeComponent();
-            DataContext = viewModel;
+
+            _mainViewModel = mainViewModel;
+            _rulesViewModel = rulesViewModel;
+            _ruleLogViewModel = ruleLogViewModel;
+
+            // Set DataContext for main content (Journal and Watched Paths tabs)
+            DataContext = _mainViewModel;
+
+            // Set DataContext for Rules tab
+            if (RulesTab.Content is FrameworkElement rulesContent)
+            {
+                rulesContent.DataContext = _rulesViewModel;
+            }
+
+            // Set DataContext for Rule Log tab
+            if (RuleLogTab.Content is FrameworkElement logContent)
+            {
+                logContent.DataContext = _ruleLogViewModel;
+            }
         }
     }
 }

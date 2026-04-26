@@ -40,8 +40,6 @@ namespace DirectoryMonitor
             // Setup DI
             var services = new ServiceCollection();
             ConfigureServices(services);
-
-            services.AddSingleton<IWatcherManager, WatcherManager>();
             _serviceProvider = services.BuildServiceProvider();
 
             // Auto-migrate database
@@ -70,6 +68,9 @@ namespace DirectoryMonitor
             // Create and show main window
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
+
+            var watcherManager = _serviceProvider.GetRequiredService<IWatcherManager>();
+            await watcherManager.StartAllAsync();
         }
 
         private Rule CreateTestRule()
@@ -163,7 +164,10 @@ namespace DirectoryMonitor
             services.AddSingleton<IRuleEngine, RuleEngine>();
             services.AddSingleton<IWatcherManager, WatcherManager>();
 
+
             // ViewModels
+            services.AddSingleton<RulesViewModel>();
+            services.AddSingleton<RuleLogViewModel>();
             services.AddSingleton<MainWindowViewModel>();
 
             // Main window
