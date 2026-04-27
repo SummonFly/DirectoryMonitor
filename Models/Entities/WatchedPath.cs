@@ -14,10 +14,11 @@ namespace DirectoryMonitor.Models.Entities
 
         public bool IncludeSubdirectories { get; set; } = true;
 
-        public string? FileExtensionsFilter { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedAt { get; set; }
+
+        // Navigation
+        public ICollection<WatchedPathRule> WatchedPathRules { get; set; } = new List<WatchedPathRule>();
     }
 }

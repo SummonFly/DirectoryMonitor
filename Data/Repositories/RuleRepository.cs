@@ -5,21 +5,23 @@ namespace DirectoryMonitor.Data.Repositories
 {
     public class RuleRepository : IRuleRepository
     {
-        private readonly AppDbContext _context;
+        IDbContextFactory<AppDbContext> _contextFactory;
 
-        public RuleRepository(AppDbContext context)
+        public RuleRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<Rule>> GetAllAsync()
         {
-            return await _context.Rules.ToListAsync();
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Rules.ToListAsync();
         }
 
         public async Task<List<Rule>> GetActiveAsync()
         {
-            return await _context.Rules
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Rules
                 .Where(r => r.IsActive)
                 .OrderBy(r => r.Priority)
                 .ToListAsync();
@@ -27,30 +29,43 @@ namespace DirectoryMonitor.Data.Repositories
 
         public async Task<Rule?> GetByIdAsync(int id)
         {
-            return await _context.Rules.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Rules.FindAsync(id);
+        }
+
+        public async Task<Rule?> GetRuleWithActionsAsync(int id)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Rules
+                .Include(r => r.RuleActions)
+                    .ThenInclude(ra => ra.Action)
+                .FirstOrDefaultAsync(r => r.Id == id);
         }
 
         public async Task AddAsync(Rule rule)
         {
+            using var context = _contextFactory.CreateDbContext();
             rule.CreatedAt = DateTime.UtcNow;
-            await _context.Rules.AddAsync(rule);
-            await _context.SaveChangesAsync();
+            await context.Rules.AddAsync(rule);
+            await context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(Rule rule)
         {
+            using var context = _contextFactory.CreateDbContext();
             rule.UpdatedAt = DateTime.UtcNow;
-            _context.Rules.Update(rule);
-            await _context.SaveChangesAsync();
+            context.Rules.Update(rule);
+            await context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(int id)
         {
+            using var context = _contextFactory.CreateDbContext();
             var rule = await GetByIdAsync(id);
             if (rule != null)
             {
-                _context.Rules.Remove(rule);
-                await _context.SaveChangesAsync();
+                context.Rules.Remove(rule);
+                await context.SaveChangesAsync();
             }
         }
     }

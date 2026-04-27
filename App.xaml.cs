@@ -1,7 +1,6 @@
 ﻿using DirectoryMonitor.Data;
 using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Models;
-using DirectoryMonitor.Models.Actions;
 using DirectoryMonitor.Models.Conditions;
 using DirectoryMonitor.Models.Entities;
 using DirectoryMonitor.Models.Enums;
@@ -27,6 +26,8 @@ namespace DirectoryMonitor
 
         private System.Windows.Forms.NotifyIcon? _trayIcon;
 
+        public static IServiceProvider ServiceProvider { get; private set; } = null!;
+
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -41,6 +42,8 @@ namespace DirectoryMonitor
             var services = new ServiceCollection();
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
+
+            ServiceProvider = _serviceProvider;
 
             // Auto-migrate database
             using var scope = _serviceProvider.CreateScope();
@@ -73,55 +76,6 @@ namespace DirectoryMonitor
             await watcherManager.StartAllAsync();
         }
 
-        private Rule CreateTestRule()
-        {
-            var condition = new ConditionGroup
-            {
-                Operator = LogicalOperator.And,
-                Children = new List<ConditionNode>
-            {
-            new ExtensionCondition
-            {
-                Extensions = new List<string> { ".txt", ".log" },
-                MatchType = ExtensionMatchType.Equals
-            }
-            }
-            };
-
-            var actions = new List<ActionBase>
-            {
-                new ShowNotificationAction
-                {
-                    Title = "File Changed",
-                    Message = "A .txt or .log file was changed"
-                }
-            };
-
-            var definition = new RuleDefinition
-            {
-                Condition = condition,
-                Actions = actions
-            };
-
-            var jsonSettings = new JsonSerializerSettings
-            {
-                TypeNameHandling = TypeNameHandling.Auto,
-                Formatting = Formatting.Indented
-            };
-
-            var definitionJson = JsonConvert.SerializeObject(definition, jsonSettings);
-
-            return new Rule
-            {
-                Name = "Monitor TXT and LOG files",
-                IsActive = true,
-                Priority = 100,
-                EventType = EventType.Changed,
-                DefinitionJson = definitionJson,
-                CreatedAt = DateTime.UtcNow
-            };
-        }
-
         private void InitializeTray()
         {
             _trayIcon = new System.Windows.Forms.NotifyIcon
@@ -150,14 +104,16 @@ namespace DirectoryMonitor
         {
             // Database
             var connectionString = _configuration!.GetConnectionString("DefaultConnection");
-            services.AddDbContext<AppDbContext>(options =>
+            services.AddDbContextFactory<AppDbContext>(options =>
                 options.UseSqlite(connectionString));
 
             // Repositories
             services.AddScoped<IWatchedPathRepository, WatchedPathRepository>();
             services.AddScoped<IEventLogRepository, EventLogRepository>();
             services.AddScoped<IRuleRepository, RuleRepository>();
+            services.AddScoped<IActionRepository, ActionRepository>();
             services.AddScoped<IRuleExecutionLogRepository, RuleExecutionLogRepository>();
+            services.AddScoped<IRuleActionRepository, RuleActionRepository>();
 
             // Services
             services.AddSingleton<IJournalService, JournalService>();
@@ -169,6 +125,7 @@ namespace DirectoryMonitor
             services.AddSingleton<RulesViewModel>();
             services.AddSingleton<RuleLogViewModel>();
             services.AddSingleton<MainWindowViewModel>();
+            services.AddSingleton<ActionsViewModel>();
 
             // Main window
             services.AddSingleton<MainWindow>();

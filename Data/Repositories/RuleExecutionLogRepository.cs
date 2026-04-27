@@ -5,23 +5,25 @@ namespace DirectoryMonitor.Data.Repositories
 {
     public class RuleExecutionLogRepository : IRuleExecutionLogRepository
     {
-        private readonly AppDbContext _context;
+        IDbContextFactory<AppDbContext> _contextFactory;
 
-        public RuleExecutionLogRepository(AppDbContext context)
+        public RuleExecutionLogRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task AddAsync(RuleExecutionLogEntry entry)
         {
+            using var context = _contextFactory.CreateDbContext();
             entry.Timestamp = DateTime.UtcNow;
-            await _context.RuleExecutionLogs.AddAsync(entry);
-            await _context.SaveChangesAsync();
+            await context.RuleExecutionLogs.AddAsync(entry);
+            await context.SaveChangesAsync();
         }
 
         public async Task<List<RuleExecutionLogEntry>> GetByRuleIdAsync(int ruleId, int limit = 100)
         {
-            return await _context.RuleExecutionLogs
+            using var context = _contextFactory.CreateDbContext();
+            return await context.RuleExecutionLogs
                 .Where(l => l.RuleId == ruleId)
                 .OrderByDescending(l => l.Timestamp)
                 .Take(limit)
@@ -30,7 +32,8 @@ namespace DirectoryMonitor.Data.Repositories
 
         public async Task<List<RuleExecutionLogEntry>> GetRecentAsync(int limit = 100)
         {
-            return await _context.RuleExecutionLogs
+            using var context = _contextFactory.CreateDbContext();
+            return await context.RuleExecutionLogs
                 .OrderByDescending(l => l.Timestamp)
                 .Take(limit)
                 .ToListAsync();
@@ -38,10 +41,11 @@ namespace DirectoryMonitor.Data.Repositories
 
         public async Task<int> DeleteOldAsync(DateTime before)
         {
-            var oldEntries = _context.RuleExecutionLogs.Where(l => l.Timestamp < before);
+            using var context = _contextFactory.CreateDbContext();
+            var oldEntries = context.RuleExecutionLogs.Where(l => l.Timestamp < before);
             var count = await oldEntries.CountAsync();
-            _context.RuleExecutionLogs.RemoveRange(oldEntries);
-            await _context.SaveChangesAsync();
+            context.RuleExecutionLogs.RemoveRange(oldEntries);
+            await context.SaveChangesAsync();
             return count;
         }
     }

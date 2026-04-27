@@ -6,23 +6,25 @@ namespace DirectoryMonitor.Data.Repositories
 {
     public class EventLogRepository : IEventLogRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public EventLogRepository(AppDbContext context)
+        public EventLogRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task AddAsync(EventLogEntry entry)
         {
+            using var context = _contextFactory.CreateDbContext();
             entry.Timestamp = DateTime.UtcNow;
-            await _context.EventLogEntries.AddAsync(entry);
-            await _context.SaveChangesAsync();
+            await context.EventLogEntries.AddAsync(entry);
+            await context.SaveChangesAsync();
         }
 
         public async Task<List<EventLogEntry>> GetRecentAsync(int count)
         {
-            return await _context.EventLogEntries
+            using var context = _contextFactory.CreateDbContext();
+            return await context.EventLogEntries
                 .Include(e => e.WatchedPath)
                 .OrderByDescending(e => e.Timestamp)
                 .Take(count)
@@ -31,7 +33,8 @@ namespace DirectoryMonitor.Data.Repositories
 
         public async Task<List<EventLogEntry>> GetByFilterAsync(EventType? eventType, string? searchPath, DateTime? from, DateTime? to)
         {
-            var query = _context.EventLogEntries
+            using var context = _contextFactory.CreateDbContext();
+            var query = context.EventLogEntries
                 .Include(e => e.WatchedPath)
                 .AsQueryable();
 
@@ -61,10 +64,11 @@ namespace DirectoryMonitor.Data.Repositories
 
         public async Task<int> DeleteOldAsync(DateTime before)
         {
-            var oldEntries = _context.EventLogEntries.Where(e => e.Timestamp < before);
+            using var context = _contextFactory.CreateDbContext();
+            var oldEntries = context.EventLogEntries.Where(e => e.Timestamp < before);
             var count = await oldEntries.CountAsync();
-            _context.EventLogEntries.RemoveRange(oldEntries);
-            await _context.SaveChangesAsync();
+            context.EventLogEntries.RemoveRange(oldEntries);
+            await context.SaveChangesAsync();
             return count;
         }
     }

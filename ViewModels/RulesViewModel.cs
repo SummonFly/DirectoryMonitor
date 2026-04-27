@@ -4,6 +4,7 @@ using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Models.Entities;
 using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.Services.Interfaces;
+using DirectoryMonitor.Views;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -12,6 +13,7 @@ namespace DirectoryMonitor.ViewModels
     public partial class RulesViewModel : ObservableObject
     {
         private readonly IRuleRepository _ruleRepository;
+        private readonly IActionRepository _actionRepository;
         private readonly IRuleEngine _ruleEngine;
 
         [ObservableProperty]
@@ -20,9 +22,10 @@ namespace DirectoryMonitor.ViewModels
         [ObservableProperty]
         private RuleListItemViewModel? _selectedRule;
 
-        public RulesViewModel(IRuleRepository ruleRepository, IRuleEngine ruleEngine)
+        public RulesViewModel(IRuleRepository ruleRepository, IRuleEngine ruleEngine, IActionRepository actionRepository)
         {
             _ruleRepository = ruleRepository;
+            _actionRepository = actionRepository;
             _ruleEngine = ruleEngine;
 
             LoadRulesCommand = new AsyncRelayCommand(LoadRulesAsync);
@@ -59,41 +62,37 @@ namespace DirectoryMonitor.ViewModels
                 Rules.Add(new RuleListItemViewModel(rule));
             }
         }
-
         private async Task AddRuleAsync()
         {
-            // Will open dialog
-            // For now, create empty rule
+            var dialog = new RuleEditorWindow();
+            dialog.Owner = Application.Current.MainWindow;
 
-            // Minimal valid JSON for empty rule
-            string validMinimalJson = @"
+            if (dialog.ShowDialog() == true && dialog.ResultRule != null)
             {
-                ""Condition"": {
-                    ""$type"": ""DirectoryMonitor.Models.Conditions.ConditionGroup, DirectoryMonitor"",
-                    ""Operator"": 0,
-                    ""Children"": []
-                },
-                ""Actions"": []
-            }";
-            var newRule = new Rule
-            {
-                Name = "New Rule",
-                IsActive = true,
-                Priority = 100,
-                EventType = EventType.Changed,
-                DefinitionJson = validMinimalJson
-            };
-
-            await _ruleRepository.AddAsync(newRule);
-            await LoadRulesAsync();
-            await _ruleEngine.ReloadRulesAsync();
+                await _actionRepository.AddRuleWithActionsAsync(dialog.ResultRule, dialog.AssignedActions);
+                await LoadRulesAsync();
+                await _ruleEngine.ReloadRulesAsync();
+            }
         }
 
         private async Task EditRuleAsync()
         {
             if (SelectedRule == null) return;
-            // Will open dialog with rule editor
-            MessageBox.Show($"Edit rule: {SelectedRule.Name}", "Edit Rule");
+
+            var rule = await _actionRepository.GetRuleWithActionsAsync(SelectedRule.Id);
+            if (rule == null) return;
+
+            var dialog = new RuleEditorWindow(rule);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true && dialog.ResultRule != null)
+            {
+                dialog.ResultRule.Id = rule.Id;
+                dialog.ResultRule.CreatedAt = rule.CreatedAt;
+                await _actionRepository.UpdateRuleWithActionsAsync(dialog.ResultRule, dialog.AssignedActions);
+                await LoadRulesAsync();
+                await _ruleEngine.ReloadRulesAsync();
+            }
         }
 
         private async Task DeleteRuleAsync()

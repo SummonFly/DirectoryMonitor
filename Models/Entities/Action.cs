@@ -1,9 +1,14 @@
 ﻿using DirectoryMonitor.Models.Enums;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace DirectoryMonitor.Models.Entities
 {
-    public class Rule
+    public class Action
     {
         [Key]
         public int Id { get; set; }
@@ -11,22 +16,15 @@ namespace DirectoryMonitor.Models.Entities
         [Required]
         public string Name { get; set; } = string.Empty;
 
-        public bool IsActive { get; set; } = true;
-
-        public int Priority { get; set; } = 100;
+        [Required]
+        public ActionType ActionType { get; set; }
 
         [Required]
-        public EventType EventType { get; set; }
-
-        [Required]
-        public string ConditionsJson { get; set; } = string.Empty;
+        public string ParametersJson { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime? UpdatedAt { get; set; }
-
         // Navigation
-        public ICollection<WatchedPathRule> WatchedPathRules { get; set; } = new List<WatchedPathRule>();
         public ICollection<RuleAction> RuleActions { get; set; } = new List<RuleAction>();
     }
 }

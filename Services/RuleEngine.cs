@@ -1,5 +1,6 @@
 ﻿using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Models;
+using DirectoryMonitor.Models.Conditions;
 using DirectoryMonitor.Models.Entities;
 using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.Services.Interfaces;
@@ -44,10 +45,20 @@ namespace DirectoryMonitor.Services
                 _ => EventType.Changed
             };
 
+            // Get applicable rules (by event type and by WatchedPathId if provided)
             var applicableRules = _rules
                 .Where(r => r.IsActive && r.EventType == eventType)
-                .OrderBy(r => r.Priority)
                 .ToList();
+
+            // If watchedPathId is provided, filter rules that are linked to this path
+            if (watchedPathId.HasValue)
+            {
+                applicableRules = applicableRules
+                    .Where(r => r.WatchedPathRules.Any(wpr => wpr.WatchedPathId == watchedPathId.Value))
+                    .ToList();
+            }
+
+            applicableRules = applicableRules.OrderBy(r => r.Priority).ToList();
 
             foreach (var rule in applicableRules)
             {
@@ -57,8 +68,9 @@ namespace DirectoryMonitor.Services
 
                 try
                 {
-                    var definition = JsonConvert.DeserializeObject<RuleDefinition>(rule.DefinitionJson, _jsonSettings);
-                    if (definition == null)
+                    // Deserialize conditions from JSON
+                    var condition = JsonConvert.DeserializeObject<ConditionNode>(rule.ConditionsJson, _jsonSettings);
+                    if (condition == null)
                         continue;
 
                     // Check condition
@@ -66,13 +78,22 @@ namespace DirectoryMonitor.Services
                         ? new FileInfo(args.FullPath)
                         : null;
 
-                    if (!definition.Condition.IsMet(args, fileInfo))
+                    if (!condition.IsMet(args, fileInfo))
                         continue;
 
-                    // Execute actions
-                    foreach (var action in definition.Actions)
+                    // Load rule with actions
+                    var ruleWithActions = await _ruleRepository.GetRuleWithActionsAsync(rule.Id);
+                    if (ruleWithActions == null || !ruleWithActions.RuleActions.Any())
+                        continue;
+
+                    // Execute actions in order
+                    var orderedActions = ruleWithActions.RuleActions.OrderBy(ra => ra.Order).ToList();
+                    foreach (var ruleAction in orderedActions)
                     {
-                        await action.ExecuteAsync(args);
+                        var action = ruleAction.Action;
+                        if (action == null) continue;
+
+                        await ExecuteActionAsync(action, args);
                     }
                 }
                 catch (Exception ex)
@@ -100,5 +121,80 @@ namespace DirectoryMonitor.Services
                 }
             }
         }
-    }
+
+        private async Task ExecuteActionAsync(Models.Entities.Action action, FileSystemEventArgs args)
+        {
+            // Deserialize parameters and execute based on ActionType
+            var parameters = JsonConvert.DeserializeObject<Dictionary<string, object>>(action.ParametersJson)
+                             ?? new Dictionary<string, object>();
+
+            switch (action.ActionType)
+            {
+                case ActionType.Notification:
+                    var title = parameters.GetValueOrDefault("Title")?.ToString() ?? "Directory Monitor";
+                    var message = parameters.GetValueOrDefault("Message")?.ToString() ?? string.Empty;
+                    await ShowNotificationAsync(title, message);
+                    break;
+
+                case ActionType.RunProgram:
+                    var programPath = parameters.GetValueOrDefault("ProgramPath")?.ToString() ?? string.Empty;
+                    var arguments = parameters.GetValueOrDefault("Arguments")?.ToString() ?? string.Empty;
+                    await RunProgramAsync(programPath, arguments);
+                    break;
+
+                case ActionType.CopyFile:
+                    var destFolder = parameters.GetValueOrDefault("DestinationFolder")?.ToString() ?? string.Empty;
+                    var overwrite = parameters.GetValueOrDefault("Overwrite") as bool? ?? false;
+                    await CopyFileAsync(args.FullPath, destFolder, overwrite);
+                    break;
+            }
+        }
+
+        private Task ShowNotificationAsync(string title, string message)
+        {
+            // Will be implemented with INotificationService
+            System.Diagnostics.Debug.WriteLine($"Notification: {title} - {message}");
+            return Task.CompletedTask;
+        }
+
+        private Task RunProgramAsync(string programPath, string arguments)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = programPath,
+                    Arguments = arguments,
+                    UseShellExecute = true,
+                    CreateNoWindow = true
+                };
+                Process.Start(startInfo);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to run program: {ex.Message}");
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+
+        private Task CopyFileAsync(string sourcePath, string destinationFolder, bool overwrite)
+        {
+            try
+            {
+                if (!Directory.Exists(destinationFolder))
+                    Directory.CreateDirectory(destinationFolder);
+
+                var fileName = Path.GetFileName(sourcePath);
+                var destPath = Path.Combine(destinationFolder, fileName);
+                File.Copy(sourcePath, destPath, overwrite);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to copy file: {ex.Message}");
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+}
 }

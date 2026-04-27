@@ -1,55 +1,62 @@
 ﻿using DirectoryMonitor.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace DirectoryMonitor.Data.Repositories
 {
     public class WatchedPathRepository : IWatchedPathRepository
     {
-        private readonly AppDbContext _context;
+        IDbContextFactory<AppDbContext> _contextFactory;
 
-        public WatchedPathRepository(AppDbContext context)
+        public WatchedPathRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<WatchedPath>> GetAllAsync()
         {
-            return await _context.WatchedPaths.ToListAsync();
+            using var context = _contextFactory.CreateDbContext();
+            return await context.WatchedPaths.ToListAsync();
         }
 
         public async Task<List<WatchedPath>> GetActiveAsync()
         {
-            return await _context.WatchedPaths
+            using var context = _contextFactory.CreateDbContext();
+            return await context.WatchedPaths
                 .Where(w => w.IsActive)
                 .ToListAsync();
         }
 
         public async Task<WatchedPath?> GetByIdAsync(int id)
         {
-            return await _context.WatchedPaths.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            return await context.WatchedPaths.FindAsync(id);
         }
 
         public async Task AddAsync(WatchedPath watchedPath)
         {
+            using var context = _contextFactory.CreateDbContext();
             watchedPath.CreatedAt = DateTime.UtcNow;
-            await _context.WatchedPaths.AddAsync(watchedPath);
-            await _context.SaveChangesAsync();
+            await context.WatchedPaths.AddAsync(watchedPath);
+            await context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(WatchedPath watchedPath)
         {
+            using var context = _contextFactory.CreateDbContext();
             watchedPath.UpdatedAt = DateTime.UtcNow;
-            _context.WatchedPaths.Update(watchedPath);
-            await _context.SaveChangesAsync();
+            context.WatchedPaths.Update(watchedPath);
+            await context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(int id)
         {
+            using var context = _contextFactory.CreateDbContext();
             var path = await GetByIdAsync(id);
             if (path != null)
             {
-                _context.WatchedPaths.Remove(path);
-                await _context.SaveChangesAsync();
+                context.WatchedPaths.Remove(path);
+                await context.SaveChangesAsync();
             }
         }
     }

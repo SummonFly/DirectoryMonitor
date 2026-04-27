@@ -16,6 +16,10 @@ namespace DirectoryMonitor.Data
         public DbSet<Models.Entities.Rule> Rules { get; set; }
         public DbSet<RuleExecutionLogEntry> RuleExecutionLogs { get; set; }
 
+        public DbSet<Models.Entities.Action> Actions { get; set; }
+        public DbSet<WatchedPathRule> WatchedPathRules { get; set; }
+        public DbSet<RuleAction> RuleActions { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -36,6 +40,10 @@ namespace DirectoryMonitor.Data
                 .Property(r => r.EventType)
                 .HasConversion<string>();
 
+            modelBuilder.Entity<Models.Entities.Action>()
+                .Property(a => a.ActionType)
+                .HasConversion<string>();
+
             modelBuilder.Entity<RuleExecutionLogEntry>()
                 .Property(r => r.EventType)
                 .HasConversion<string>();
@@ -46,6 +54,36 @@ namespace DirectoryMonitor.Data
 
             modelBuilder.Entity<RuleExecutionLogEntry>()
                 .HasIndex(r => r.RuleId);
+
+            // WatchedPathRule configuration
+            modelBuilder.Entity<WatchedPathRule>()
+                .HasOne(wpr => wpr.WatchedPath)
+                .WithMany(wp => wp.WatchedPathRules)
+                .HasForeignKey(wpr => wpr.WatchedPathId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<WatchedPathRule>()
+                .HasOne(wpr => wpr.Rule)
+                .WithMany(r => r.WatchedPathRules)
+                .HasForeignKey(wpr => wpr.RuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // RuleAction configuration
+            modelBuilder.Entity<RuleAction>()
+                .HasOne(ra => ra.Rule)
+                .WithMany(r => r.RuleActions)
+                .HasForeignKey(ra => ra.RuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RuleAction>()
+                .HasOne(ra => ra.Action)
+                .WithMany(a => a.RuleActions)
+                .HasForeignKey(ra => ra.ActionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RuleAction>()
+                .HasIndex(ra => new { ra.RuleId, ra.ActionId })
+                .IsUnique();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

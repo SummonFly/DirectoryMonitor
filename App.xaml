@@ -2,9 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:DirectoryMonitor"
-             xmlns:con="clr-namespace:DirectoryMonitor.Converters">
+             xmlns:converters="clr-namespace:DirectoryMonitor.Converters">
     <Application.Resources>
-        <con:IsNotNullConverter x:Key="IsNotNullConverter"/>
+        <converters:IsNotNullConverter x:Key="IsNotNullConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:ListToStringConverter x:Key="ListToStringConverter"/>
         <ContextMenu x:Key="TrayMenu">
             <MenuItem Header="Show Window" Command="{Binding ShowWindowCommand}"/>
             <Separator/>

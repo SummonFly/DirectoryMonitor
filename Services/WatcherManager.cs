@@ -12,13 +12,18 @@ namespace DirectoryMonitor.Services
         private readonly ConcurrentDictionary<int, FileSystemWatcherWrapper> _watchers = new();
         private readonly IJournalService _journalService;
         private readonly IWatchedPathRepository _watchedPathRepository;
+        private readonly IRuleEngine _ruleEngine;
 
         public event EventHandler<FileSystemEventArgs>? FileEvent;
 
-        public WatcherManager(IJournalService journalService, IWatchedPathRepository watchedPathRepository)
+        public WatcherManager(
+            IJournalService journalService,
+            IWatchedPathRepository watchedPathRepository,
+            IRuleEngine ruleEngine)
         {
             _journalService = journalService;
             _watchedPathRepository = watchedPathRepository;
+            _ruleEngine = ruleEngine;
         }
 
         public async Task StartWatchingAsync(WatchedPath watchedPath)
@@ -32,8 +37,7 @@ namespace DirectoryMonitor.Services
 
                 var wrapper = new FileSystemWatcherWrapper(
                     watchedPath.Path,
-                    watchedPath.IncludeSubdirectories,
-                    watchedPath.FileExtensionsFilter
+                    watchedPath.IncludeSubdirectories
                 );
 
                 wrapper.FileEvent += async (s, e) => await OnFileEvent(e, watchedPath.Id);
@@ -79,19 +83,8 @@ namespace DirectoryMonitor.Services
             return _watchers.ContainsKey(watchedPathId);
         }
 
-
-        private readonly IRuleEngine _ruleEngine;
-
-        public WatcherManager(IJournalService journalService, IWatchedPathRepository watchedPathRepository, IRuleEngine ruleEngine)
-        {
-            _journalService = journalService;
-            _watchedPathRepository = watchedPathRepository;
-            _ruleEngine = ruleEngine;
-        }
-
         private async Task OnFileEvent(FileSystemEventArgs e, int watchedPathId)
         {
-            // Convert WatcherChangeTypes to our EventType enum
             EventType eventType = e.ChangeType switch
             {
                 WatcherChangeTypes.Created => EventType.Created,
@@ -110,7 +103,6 @@ namespace DirectoryMonitor.Services
 
             await _journalService.LogEventAsync(e.FullPath, eventType, oldPath, watchedPathId);
 
-            // Execute rules
             await _ruleEngine.EvaluateAndExecuteAsync(e, watchedPathId);
 
             FileEvent?.Invoke(this, e);

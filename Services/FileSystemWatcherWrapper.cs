@@ -8,18 +8,16 @@ namespace DirectoryMonitor.Services
         private FileSystemWatcher? _watcher;
         private readonly string _path;
         private readonly bool _includeSubdirectories;
-        private readonly string? _filter;
         private readonly System.Timers.Timer _debounceTimer;
         private readonly Dictionary<string, DateTime> _lastEventTime = new();
         private const int DebounceMilliseconds = 300;
 
         public event EventHandler<FileSystemEventArgs>? FileEvent;
 
-        public FileSystemWatcherWrapper(string path, bool includeSubdirectories, string? filter = null)
+        public FileSystemWatcherWrapper(string path, bool includeSubdirectories)
         {
             _path = path;
             _includeSubdirectories = includeSubdirectories;
-            _filter = filter;
 
             _debounceTimer = new System.Timers.Timer(DebounceMilliseconds);
             _debounceTimer.AutoReset = false;
@@ -37,11 +35,6 @@ namespace DirectoryMonitor.Services
                 EnableRaisingEvents = false,
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size
             };
-
-            if (!string.IsNullOrWhiteSpace(_filter))
-            {
-                _watcher.Filter = _filter;
-            }
 
             _watcher.Created += OnEvent;
             _watcher.Changed += OnEvent;
