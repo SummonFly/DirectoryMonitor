@@ -1,5 +1,4 @@
 ﻿using DirectoryMonitor.Data.Repositories;
-using DirectoryMonitor.Models;
 using DirectoryMonitor.Models.Conditions;
 using DirectoryMonitor.Models.Entities;
 using DirectoryMonitor.Models.Enums;
@@ -196,5 +195,5 @@ namespace DirectoryMonitor.Services
             }
             return Task.CompletedTask;
         }
-}
+    }
 }

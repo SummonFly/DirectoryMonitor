@@ -1,6 +1,4 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using DirectoryMonitor.Data.Repositories;
+﻿using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Helpers;
 using DirectoryMonitor.Models.Conditions;
 using DirectoryMonitor.Models.Entities;
@@ -8,6 +6,8 @@ using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using System.Windows;
+using System.Windows.Controls;
 /// <summary>
 /// Логика взаимодействия для RuleEditorWindow.xaml
 /// </summary>

@@ -2,7 +2,6 @@
 using DirectoryMonitor.Models.Conditions;
 using DirectoryMonitor.Models.Enums;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 
 namespace DirectoryMonitor.ViewModels
 {

@@ -1,6 +1,5 @@
 ﻿using DirectoryMonitor.Models.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 
 namespace DirectoryMonitor.Data.Repositories
 {

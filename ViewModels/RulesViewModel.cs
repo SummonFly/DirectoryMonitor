@@ -1,8 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DirectoryMonitor.Data.Repositories;
-using DirectoryMonitor.Models.Entities;
-using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.Services.Interfaces;
 using DirectoryMonitor.Views;
 using System.Collections.ObjectModel;

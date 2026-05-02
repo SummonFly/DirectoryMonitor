@@ -1,16 +1,11 @@
 ﻿using DirectoryMonitor.Data;
 using DirectoryMonitor.Data.Repositories;
-using DirectoryMonitor.Models;
-using DirectoryMonitor.Models.Conditions;
-using DirectoryMonitor.Models.Entities;
-using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.Services;
 using DirectoryMonitor.Services.Interfaces;
 using DirectoryMonitor.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using System.IO;
 using System.Windows;
 
@@ -72,15 +67,15 @@ namespace DirectoryMonitor
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
 
-            var watcherManager = _serviceProvider.GetRequiredService<IWatcherManager>();
-            await watcherManager.StartAllAsync();
+            //var watcherManager = _serviceProvider.GetRequiredService<IWatcherManager>();
+            //await watcherManager.StartAllAsync();
         }
 
         private void InitializeTray()
         {
             _trayIcon = new System.Windows.Forms.NotifyIcon
             {
-                Icon = new System.Drawing.Icon("icon.ico"), 
+                Icon = new System.Drawing.Icon("icon.ico"),
                 Visible = true,
                 Text = "Directory Monitor"
             };

@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using DirectoryMonitor.Models.Entities;
-using DirectoryMonitor.Models.Enums;
 
 namespace DirectoryMonitor.ViewModels
 {
