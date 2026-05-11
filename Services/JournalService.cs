@@ -8,10 +8,12 @@ namespace DirectoryMonitor.Services
     public class JournalService : IJournalService
     {
         private readonly IEventLogRepository _eventLogRepository;
+        private readonly ISettingsService _settingsService;
 
-        public JournalService(IEventLogRepository eventLogRepository)
+        public JournalService(IEventLogRepository eventLogRepository, ISettingsService settingsService)
         {
             _eventLogRepository = eventLogRepository;
+            _settingsService = settingsService;
         }
 
         public async Task LogEventAsync(string path, EventType eventType, string? oldPath = null, int? watchedPathId = null)
@@ -30,7 +32,8 @@ namespace DirectoryMonitor.Services
 
         public async Task<List<EventLogEntry>> GetRecentEventsAsync(int count)
         {
-            return await _eventLogRepository.GetRecentAsync(count);
+            var maxEntries = _settingsService.Settings.MaxLogEntries;
+            return await _eventLogRepository.GetRecentAsync(maxEntries);
         }
 
         public async Task<List<EventLogEntry>> GetFilteredEventsAsync(EventType? eventType, string? searchPath, DateTime? from, DateTime? to)

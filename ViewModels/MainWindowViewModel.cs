@@ -2,7 +2,9 @@
 using CommunityToolkit.Mvvm.Input;
 using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Models.Entities;
+using DirectoryMonitor.Models.Enums;
 using DirectoryMonitor.Services.Interfaces;
+using DirectoryMonitor.Views;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -13,15 +15,23 @@ namespace DirectoryMonitor.ViewModels
         private readonly IJournalService _journalService;
         private readonly IWatchedPathRepository _watchedPathRepository;
         private readonly IWatcherManager _watcherManager;
+        private readonly IWatchedPathRuleRepository _watchedPathRuleRepository;
+        private readonly IRuleEngine _ruleEngine;
+        private readonly IRuleRepository _ruleRepository;
+        private readonly IRuleActionRepository _ruleActionRepository;
+
 
         [ObservableProperty]
-        private ObservableCollection<Models.Entities.EventLogEntry> _events = new();
+        private ObservableCollection<RuleItemViewModel> _rules = new();
 
         [ObservableProperty]
-        private ObservableCollection<WatchedPath> _watchedPaths = new();
+        private ObservableCollection<EventLogEntry> _events = new();
 
         [ObservableProperty]
-        private WatchedPath? _selectedWatchedPath;
+        private ObservableCollection<WatchedPathItemViewModel> _watchedPaths = new();
+
+        [ObservableProperty]
+        private WatchedPathItemViewModel? _selectedWatchedPath;
 
         [ObservableProperty]
         private string _eventTypeFilter = "All";
@@ -29,14 +39,25 @@ namespace DirectoryMonitor.ViewModels
         [ObservableProperty]
         private string _searchText = string.Empty;
 
+
+
         public MainWindowViewModel(
             IJournalService journalService,
             IWatchedPathRepository watchedPathRepository,
-            IWatcherManager watcherManager)
+            IWatcherManager watcherManager,
+            IWatchedPathRuleRepository watchedPathRuleRepository,
+            IRuleEngine ruleEngine,
+            IRuleRepository ruleRepository,
+            IRuleActionRepository ruleActionRepository)
         {
             _journalService = journalService;
             _watchedPathRepository = watchedPathRepository;
             _watcherManager = watcherManager;
+            _watchedPathRuleRepository = watchedPathRuleRepository;
+            _ruleEngine = ruleEngine;
+            _ruleRepository = ruleRepository;
+            _ruleActionRepository = ruleActionRepository;
+
 
             // Commands
             LoadEventsCommand = new AsyncRelayCommand(LoadEventsAsync);
@@ -44,6 +65,22 @@ namespace DirectoryMonitor.ViewModels
             AddPathCommand = new AsyncRelayCommand(AddPathAsync);
             RemovePathCommand = new AsyncRelayCommand(RemovePathAsync, () => SelectedWatchedPath != null);
             RefreshPathsCommand = new AsyncRelayCommand(LoadPathsAsync);
+            RefreshEventsCommand = new AsyncRelayCommand(LoadEventsAsync);
+            EditPathCommand = new AsyncRelayCommand(EditPathAsync, () => SelectedWatchedPath != null);
+            EditPathWithParameterCommand = new AsyncRelayCommand<WatchedPathItemViewModel>(EditPathWithParameterAsync);
+            RemovePathWithParameterCommand = new AsyncRelayCommand<WatchedPathItemViewModel>(RemovePathWithParameterAsync);
+            AddRuleCommand = new AsyncRelayCommand(AddRuleAsync);
+            RefreshRulesCommand = new AsyncRelayCommand(LoadRulesAsync);
+            EditRuleWithParameterCommand = new AsyncRelayCommand<RuleItemViewModel>(EditRuleWithParameterAsync);
+            DeleteRuleWithParameterCommand = new AsyncRelayCommand<RuleItemViewModel>(DeleteRuleWithParameterAsync);
+
+            PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(EventTypeFilter) || e.PropertyName == nameof(SearchText))
+                {
+                    LoadEventsCommand.Execute(null);
+                }
+            };
 
             // Auto-refresh journal every 3 seconds
             var timer = new System.Timers.Timer(3000);
@@ -53,6 +90,7 @@ namespace DirectoryMonitor.ViewModels
             // Load initial data
             LoadEventsCommand.Execute(null);
             LoadPathsCommand.Execute(null);
+           
         }
 
         public IAsyncRelayCommand LoadEventsCommand { get; }
@@ -60,10 +98,28 @@ namespace DirectoryMonitor.ViewModels
         public IAsyncRelayCommand AddPathCommand { get; }
         public IAsyncRelayCommand RemovePathCommand { get; }
         public IAsyncRelayCommand RefreshPathsCommand { get; }
+        public IAsyncRelayCommand RefreshEventsCommand { get; }
+        public IAsyncRelayCommand EditPathCommand { get; }
+        public IAsyncRelayCommand<WatchedPathItemViewModel> EditPathWithParameterCommand { get; }
+        public IAsyncRelayCommand<WatchedPathItemViewModel> RemovePathWithParameterCommand { get; }
+        public IAsyncRelayCommand AddRuleCommand { get; }
+        public IAsyncRelayCommand RefreshRulesCommand { get; }
+        public IAsyncRelayCommand<RuleItemViewModel> EditRuleWithParameterCommand { get; }
+        public IAsyncRelayCommand<RuleItemViewModel> DeleteRuleWithParameterCommand { get; }
 
         private async Task LoadEventsAsync()
         {
-            var events = await _journalService.GetRecentEventsAsync(200);
+            EventType? eventType = EventTypeFilter switch
+            {
+                "Created" => EventType.Created,
+                "Changed" => EventType.Changed,
+                "Deleted" => EventType.Deleted,
+                "Renamed" => EventType.Renamed,
+                _ => null
+            };
+
+            var events = await _journalService.GetFilteredEventsAsync(eventType, SearchText, null, null);
+
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 Events.Clear();
@@ -82,38 +138,40 @@ namespace DirectoryMonitor.ViewModels
                 WatchedPaths.Clear();
                 foreach (var path in paths)
                 {
-                    WatchedPaths.Add(path);
+                    WatchedPaths.Add(new WatchedPathItemViewModel(path));
                 }
             });
         }
 
-        partial void OnSelectedWatchedPathChanged(WatchedPath? value)
+        partial void OnSelectedWatchedPathChanged(WatchedPathItemViewModel? value)
         {
             RemovePathCommand.NotifyCanExecuteChanged();
+            EditPathCommand.NotifyCanExecuteChanged();
         }
 
         private async Task AddPathAsync()
         {
-            // Use Windows Forms folder browser dialog
-            using var dialog = new System.Windows.Forms.FolderBrowserDialog();
-            dialog.Description = "Select folder to monitor";
-            dialog.ShowNewFolderButton = true;
+            var dialog = new AddWatchedPathWindow();
+            dialog.Owner = Application.Current.MainWindow;
 
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog() == true && dialog.NewWatchedPath != null)
             {
-                var newPath = new WatchedPath
-                {
-                    Path = dialog.SelectedPath,
-                    IsActive = true,
-                    IncludeSubdirectories = true,
-                    CreatedAt = DateTime.UtcNow
-                };
+                var newPath = dialog.NewWatchedPath;
 
                 await _watchedPathRepository.AddAsync(newPath);
                 await LoadPathsAsync();
 
-                // Start watcher for this path
-                await _watcherManager.StartWatchingAsync(newPath);
+                // Save rule associations
+                if (dialog.SelectedRuleIds != null && dialog.SelectedRuleIds.Any())
+                {
+                    await _watchedPathRuleRepository.UpdateRulesForWatchedPathAsync(newPath.Id, dialog.SelectedRuleIds);
+                }
+
+                // Start watcher if active
+                if (newPath.IsActive)
+                {
+                    await _watcherManager.StartWatchingAsync(newPath);
+                }
             }
         }
 
@@ -127,13 +185,123 @@ namespace DirectoryMonitor.ViewModels
             if (result == MessageBoxResult.Yes)
             {
                 // Stop watcher first
-                await _watcherManager.StopWatchingAsync(SelectedWatchedPath.Id);
+                await _watcherManager.StopWatchingAsync(SelectedWatchedPath.Model.Id);
 
                 // Remove from database
-                await _watchedPathRepository.DeleteAsync(SelectedWatchedPath.Id);
+                await _watchedPathRepository.DeleteAsync(SelectedWatchedPath.Model.Id);
 
                 // Refresh UI
                 await LoadPathsAsync();
+            }
+        }
+
+        private async Task EditPathAsync()
+        {
+            if (SelectedWatchedPath == null) return;
+
+            var dialog = new WatchedPathEditorWindow(SelectedWatchedPath.Model);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true && dialog.UpdatedWatchedPath != null)
+            {
+                await _watchedPathRepository.UpdateAsync(dialog.UpdatedWatchedPath);
+                await LoadPathsAsync();
+
+                // Restart watcher if needed
+                await _watcherManager.StopWatchingAsync(dialog.UpdatedWatchedPath.Id);
+                if (dialog.UpdatedWatchedPath.IsActive)
+                {
+                    await _watcherManager.StartWatchingAsync(dialog.UpdatedWatchedPath);
+                }
+            }
+        }
+
+        private async Task EditPathWithParameterAsync(WatchedPathItemViewModel? item)
+        {
+            if (item == null) return;
+            SelectedWatchedPath = item;
+            await EditPathAsync();
+        }
+
+        private async Task RemovePathWithParameterAsync(WatchedPathItemViewModel? item)
+        {
+            if (item == null) return;
+            SelectedWatchedPath = item;
+            await RemovePathAsync();
+        }
+
+        private async Task LoadRulesAsync()
+        {
+            var rules = await _ruleRepository.GetAllAsync();
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                Rules.Clear();
+                foreach (var rule in rules.OrderBy(r => r.Priority))
+                {
+                    Rules.Add(new RuleItemViewModel(rule));
+                }
+            });
+        }
+
+        private async Task AddRuleAsync()
+        {
+            var dialog = new RuleEditorWindow();
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true && dialog.ResultRule != null)
+            {
+                var rule = dialog.ResultRule;
+                await _ruleRepository.AddAsync(rule);
+                await LoadRulesAsync();
+                await _ruleEngine.ReloadRulesAsync();
+            }
+        }
+
+        private async Task EditRuleWithParameterAsync(RuleItemViewModel? item)
+        {
+            if (item == null) return;
+
+            var rule = await _ruleRepository.GetByIdAsync(item.Model.Id);
+            if (rule == null) return;
+
+            var dialog = new RuleEditorWindow(rule);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true && dialog.ResultRule != null)
+            {
+                dialog.ResultRule.Id = rule.Id;
+                dialog.ResultRule.CreatedAt = rule.CreatedAt;
+                await _ruleRepository.UpdateAsync(dialog.ResultRule);
+
+                // Update RuleAction associations
+                await _ruleActionRepository.DeleteByRuleIdAsync(rule.Id);
+                foreach (var actionItem in dialog.AssignedActions)
+                {
+                    await _ruleActionRepository.AddAsync(new RuleAction
+                    {
+                        RuleId = rule.Id,
+                        ActionId = actionItem.Id,
+                        Order = actionItem.Order
+                    });
+                }
+
+                await LoadRulesAsync();
+                await _ruleEngine.ReloadRulesAsync();
+            }
+        }
+
+        private async Task DeleteRuleWithParameterAsync(RuleItemViewModel? item)
+        {
+            if (item == null) return;
+
+            var result = MessageBox.Show($"Delete rule '{item.Name}'?", "Confirm",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                await _ruleRepository.DeleteAsync(item.Model.Id);
+                await LoadRulesAsync();
+                await _ruleEngine.ReloadRulesAsync();
             }
         }
     }

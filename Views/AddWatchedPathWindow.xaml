@@ -1,0 +1,53 @@
+﻿<Window x:Class="DirectoryMonitor.Views.AddWatchedPathWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add Watched Path" Height="480" Width="600"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F5F5">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Path -->
+        <Label Grid.Row="0" Content="Path:" FontWeight="Bold" Margin="0,0,0,5"/>
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="40"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="PathBox" Background="White" Margin="0,0,5,0"/>
+            <Button x:Name="BrowseButton" Grid.Column="1" Content="..." Click="BrowseButton_Click"/>
+        </Grid>
+
+        <!-- Wait for creation checkbox -->
+        <CheckBox x:Name="WaitForCreationBox" Grid.Row="2" Content="Folder does not exist yet (wait for creation)" 
+                  Margin="0,0,0,15" Checked="WaitForCreationBox_Checked" Unchecked="WaitForCreationBox_Unchecked"/>
+
+        <!-- Options -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,15">
+            <CheckBox x:Name="IncludeSubdirectoriesBox" Content="Include Subdirectories" Margin="0,0,20,0" IsChecked="True"/>
+            <CheckBox x:Name="IsActiveBox" Content="Active" IsChecked="True"/>
+        </StackPanel>
+
+        <!-- Rules List -->
+        <GroupBox Grid.Row="4" Header="Applied Rules" Margin="0,0,0,10">
+            <ListBox x:Name="RulesListBox" DisplayMemberPath="Name" SelectionMode="Multiple"/>
+        </GroupBox>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="OkButton" Content="Add" Width="80" Margin="0,0,5,0" 
+                    Background="#4CAF50" Foreground="White" BorderThickness="0" Padding="8,4" Click="OkButton_Click"/>
+            <Button x:Name="CancelButton" Content="Cancel" Width="80" 
+                    Background="#9E9E9E" Foreground="White" BorderThickness="0" Padding="8,4" Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

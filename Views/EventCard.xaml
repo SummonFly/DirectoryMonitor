@@ -1,0 +1,35 @@
+﻿<UserControl x:Class="DirectoryMonitor.Views.EventCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border Margin="0,0,0,4" Padding="10" CornerRadius="6" Background="{DynamicResource DustyBlueColorBrush}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Event Type Icon -->
+            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16" 
+                    Background="{Binding EventTypeColor}">
+                <TextBlock Text="{Binding EventTypeIcon}" 
+                           FontSize="16" 
+                           HorizontalAlignment="Center" 
+                           VerticalAlignment="Center"
+                           Foreground="White"/>
+            </Border>
+
+            <!-- Event Info -->
+            <StackPanel Grid.Column="1" Margin="10,0">
+                <TextBlock Text="{Binding Path}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}" FontSize="11" Foreground="Gray"/>
+                    <TextBlock Text="{Binding EventType}" FontSize="11" Foreground="{Binding EventTypeColor}" Margin="10,0,0,0"/>
+                    <TextBlock Text="{Binding OldPath}" FontSize="11" Foreground="Gray" Margin="10,0,0,0" 
+                               Visibility="{Binding HasOldPath, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

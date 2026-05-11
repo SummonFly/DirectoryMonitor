@@ -23,7 +23,6 @@ namespace DirectoryMonitor.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Existing indexes...
             modelBuilder.Entity<EventLogEntry>()
                 .HasIndex(e => e.Timestamp);
 
@@ -53,6 +52,13 @@ namespace DirectoryMonitor.Data
 
             modelBuilder.Entity<RuleExecutionLogEntry>()
                 .HasIndex(r => r.RuleId);
+
+            // EventLogEntry -> WatchedPath (set NULL on delete)
+            modelBuilder.Entity<EventLogEntry>()
+                .HasOne(e => e.WatchedPath)
+                .WithMany()
+                .HasForeignKey(e => e.WatchedPathId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // WatchedPathRule configuration
             modelBuilder.Entity<WatchedPathRule>()

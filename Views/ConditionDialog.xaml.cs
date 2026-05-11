@@ -17,6 +17,7 @@ namespace DirectoryMonitor.Views
         private ComboBox? _matchTypeCombo;
         private ListBox? _extensionsList;
         private TextBox? _extensionInput;
+        private ComboBox? _itemTypeCombo;
 
         public ConditionNode Result { get; private set; } = null!;
 
@@ -46,6 +47,9 @@ namespace DirectoryMonitor.Views
                     break;
                 case 2: // Size
                     CreateSizeUI();
+                    break;
+                case 3: // Item Type
+                    CreateItemTypeUI();
                     break;
             }
         }
@@ -113,6 +117,19 @@ namespace DirectoryMonitor.Views
             ParametersPanel.Children.Add(_unitCombo);
         }
 
+        private void CreateItemTypeUI()
+        {
+            var comboBox = new ComboBox { Margin = new Thickness(0, 5, 0, 5) };
+            comboBox.Items.Add("File");
+            comboBox.Items.Add("Directory");
+            comboBox.SelectedIndex = 0;
+
+            ParametersPanel.Children.Clear();
+            ParametersPanel.Children.Add(new Label { Content = "Type:", FontWeight = FontWeights.Bold });
+            ParametersPanel.Children.Add(comboBox);
+            _itemTypeCombo = comboBox;
+        }
+
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedIndex = ConditionTypeCombo.SelectedIndex;
@@ -169,6 +186,11 @@ namespace DirectoryMonitor.Views
                         Value = long.TryParse(_valueBox?.Text, out var val) ? val : 0,
                         Unit = sizeUnit
                     };
+                    break;
+                case 3: // Item Type
+                    var selectedType = _itemTypeCombo?.SelectedItem?.ToString() ?? "File";
+                    var itemType = selectedType == "Directory" ? ItemType.Directory : ItemType.File;
+                    Result = new ItemTypeCondition { Type = itemType };
                     break;
             }
 

@@ -322,23 +322,8 @@ namespace DirectoryMonitor.Views
                 CreatedAt = _editingRule?.CreatedAt ?? DateTime.UtcNow
             };
 
-            // Delete old associations
-            await _ruleActionRepository.DeleteByRuleIdAsync(rule.Id);
-
-            // Add new ones
-            foreach (var actionItem in _assignedActions)
-            {
-                await _ruleActionRepository.AddAsync(new RuleAction
-                {
-                    RuleId = rule.Id,
-                    ActionId = actionItem.Id,
-                    Order = actionItem.Order
-                });
-            }
-
             ResultRule = rule;
             DialogResult = true;
-
             Close();
         }
 

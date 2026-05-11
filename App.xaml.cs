@@ -46,29 +46,34 @@ namespace DirectoryMonitor
             dbContext.Database.Migrate();
 
 
-            // Just test
-            //var ruleRepo = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
-            //var existingRules = await ruleRepo.GetAllAsync();
+            var settingsService = _serviceProvider.GetRequiredService<ISettingsService>();
+            await settingsService.LoadAsync();
 
-            //if (!existingRules.Any())
-            //{
-            //    var testRule = CreateTestRule();
-            //    await ruleRepo.AddAsync(testRule);
-            //}
+            // Apply saved theme
+            var theme = settingsService.Settings.Theme;
+            var themeFileName = theme == "Dark" ? "DarkTheme.xaml" : "LightTheme.xaml";
+            var themeUri = new Uri($"/Themes/{themeFileName}", UriKind.Relative);
 
-            //var ruleEngine = scope.ServiceProvider.GetRequiredService<IRuleEngine>();
-            //await ruleEngine.ReloadRulesAsync();
+            var currentThemeDict = Application.Current.Resources.MergedDictionaries
+                .ElementAtOrDefault(1);
 
+            if (currentThemeDict != null)
+            {
+                Application.Current.Resources.MergedDictionaries.Remove(currentThemeDict);
+            }
 
-            // Initialize tray
-            InitializeTray();
+            var newThemeDict = new ResourceDictionary { Source = themeUri };
+            Application.Current.Resources.MergedDictionaries.Insert(1, newThemeDict);
 
             // Create and show main window
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
 
-            //var watcherManager = _serviceProvider.GetRequiredService<IWatcherManager>();
-            //await watcherManager.StartAllAsync();
+            var watcherManager = _serviceProvider.GetRequiredService<IWatcherManager>();
+            await watcherManager.StartAllAsync();
+
+            var ruleEngine = _serviceProvider.GetRequiredService<IRuleEngine>();
+            await ruleEngine.ReloadRulesAsync();
         }
 
         private void InitializeTray()
@@ -109,11 +114,14 @@ namespace DirectoryMonitor
             services.AddScoped<IActionRepository, ActionRepository>();
             services.AddScoped<IRuleExecutionLogRepository, RuleExecutionLogRepository>();
             services.AddScoped<IRuleActionRepository, RuleActionRepository>();
+            services.AddScoped<IWatchedPathRuleRepository, WatchedPathRuleRepository>();
 
             // Services
             services.AddSingleton<IJournalService, JournalService>();
             services.AddSingleton<IRuleEngine, RuleEngine>();
             services.AddSingleton<IWatcherManager, WatcherManager>();
+            services.AddSingleton<INotificationService, NotificationService>();
+            services.AddSingleton<ISettingsService, SettingsService>();
 
 
             // ViewModels
@@ -121,6 +129,8 @@ namespace DirectoryMonitor
             services.AddSingleton<RuleLogViewModel>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<ActionsViewModel>();
+            services.AddSingleton<TrayIconViewModel>();
+
 
             // Main window
             services.AddSingleton<MainWindow>();

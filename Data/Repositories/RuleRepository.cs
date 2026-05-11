@@ -22,7 +22,11 @@ namespace DirectoryMonitor.Data.Repositories
         {
             using var context = _contextFactory.CreateDbContext();
             return await context.Rules
+                .AsNoTracking()
                 .Where(r => r.IsActive)
+                .Include(r => r.WatchedPathRules)
+                .Include(r => r.RuleActions)
+                .ThenInclude(ra => ra.Action)
                 .OrderBy(r => r.Priority)
                 .ToListAsync();
         }

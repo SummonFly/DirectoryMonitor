@@ -13,6 +13,7 @@ namespace DirectoryMonitor.ViewModels
         [ObservableProperty]
         private bool _isExpanded = true;
 
+
         public ConditionNode? Model { get; set; }
         public ObservableCollection<TreeNodeViewModel> Children { get; set; } = new();
 
@@ -21,6 +22,8 @@ namespace DirectoryMonitor.ViewModels
         public bool IsExtension => Model is ExtensionCondition;
         public bool IsFileName => Model is FileNameCondition;
         public bool IsSize => Model is SizeCondition;
+        public bool IsItemType => Model is ItemTypeCondition;
+        public string? DisplayType => (Model as ItemTypeCondition)?.Type.ToString();
 
         public string? OperatorString
         {

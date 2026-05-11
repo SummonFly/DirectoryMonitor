@@ -31,6 +31,8 @@
                     <converters:IsNotNullConverter x:Key="IsNotNullConverter"/>
                     <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
                     <converters:ListToStringConverter x:Key="ListToStringConverter"/>
+                    <converters:ActiveToColorConverter x:Key="ActiveToColor"/>
+                    <converters:ActiveToIconConverter x:Key="ActiveToIcon"/>
                     <ContextMenu x:Key="TrayMenu">
                         <MenuItem Header="Show Window" Command="{Binding ShowWindowCommand}"/>
                         <Separator/>
@@ -54,12 +56,12 @@
                     <Style TargetType="TextBlock">
                         <Setter Property="FontFamily" Value="{DynamicResource MainFontFamily}"/>
                         <Setter Property="FontSize" Value="{DynamicResource FontBaseSize}"/>
-                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource DeepGreenColorBrush}"/>
                     </Style>
                     <Style TargetType="TextBox">
                         <Setter Property="FontFamily" Value="{DynamicResource MainFontFamily}"/>
                         <Setter Property="FontSize" Value="{DynamicResource FontBaseSize}"/>
-                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource DeepGreenColorBrush}"/>
                     </Style>
 
                     <Style x:Key="SecondaryText" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">

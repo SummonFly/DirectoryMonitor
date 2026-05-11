@@ -5,11 +5,8 @@ namespace DirectoryMonitor.ViewModels
 {
     public partial class TrayIconViewModel
     {
-        private readonly MainWindow _mainWindow;
-
-        public TrayIconViewModel(MainWindow mainWindow)
+        public TrayIconViewModel()
         {
-            _mainWindow = mainWindow;
             ShowWindowCommand = new RelayCommand(ShowWindow);
             ExitCommand = new RelayCommand(Exit);
         }
@@ -19,9 +16,13 @@ namespace DirectoryMonitor.ViewModels
 
         private void ShowWindow()
         {
-            _mainWindow.Show();
-            _mainWindow.WindowState = WindowState.Normal;
-            _mainWindow.Activate();
+            var mainWindow = Application.Current.MainWindow;
+            if (mainWindow != null)
+            {
+                mainWindow.Show();
+                mainWindow.WindowState = WindowState.Normal;
+                mainWindow.Activate();
+            }
         }
 
         private void Exit()

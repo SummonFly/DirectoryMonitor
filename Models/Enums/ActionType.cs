@@ -4,6 +4,11 @@
     {
         Notification,
         RunProgram,
-        CopyFile
+        CopyFile,
+        DeleteFile,
+        MoveFile,
+        RenameFile,
+        CreateDirectory,
+        DeleteDirectory
     }
 }

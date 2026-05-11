@@ -1,7 +1,7 @@
 ﻿<Window x:Class="DirectoryMonitor.Views.ActionEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Action Editor" Height="450" Width="500"
+        Title="Action Editor"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
 
@@ -26,6 +26,11 @@
             <ComboBoxItem Content="Notification"/>
             <ComboBoxItem Content="Run Program"/>
             <ComboBoxItem Content="Copy File"/>
+            <ComboBoxItem Content="Delete File"/>
+            <ComboBoxItem Content="Move File"/>
+            <ComboBoxItem Content="Rename File"/>
+            <ComboBoxItem Content="Create Directory"/>
+            <ComboBoxItem Content="Delete Directory"/>
         </ComboBox>
 
         <!-- Parameters Panel -->

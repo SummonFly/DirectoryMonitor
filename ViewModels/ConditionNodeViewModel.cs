@@ -15,6 +15,8 @@ namespace DirectoryMonitor.ViewModels
         public ConditionNode Model { get; set; }
         public ObservableCollection<ConditionNodeViewModel> Children { get; set; } = new();
 
+        public bool IsItemType => Model is ItemTypeCondition;
+
         public ConditionNodeViewModel(ConditionNode model)
         {
             Model = model;

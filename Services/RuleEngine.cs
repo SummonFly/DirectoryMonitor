@@ -13,13 +13,15 @@ namespace DirectoryMonitor.Services
     {
         private readonly IRuleRepository _ruleRepository;
         private readonly IRuleExecutionLogRepository _logRepository;
+        private readonly INotificationService _notificationService;
         private List<Rule> _rules = new();
         private readonly JsonSerializerSettings _jsonSettings;
 
-        public RuleEngine(IRuleRepository ruleRepository, IRuleExecutionLogRepository logRepository)
+        public RuleEngine(IRuleRepository ruleRepository, IRuleExecutionLogRepository logRepository, INotificationService notificationService)
         {
             _ruleRepository = ruleRepository;
             _logRepository = logRepository;
+            _notificationService = notificationService;
 
             _jsonSettings = new JsonSerializerSettings
             {
@@ -35,6 +37,7 @@ namespace DirectoryMonitor.Services
 
         public async Task EvaluateAndExecuteAsync(FileSystemEventArgs args, int? watchedPathId = null)
         {
+
             var eventType = args.ChangeType switch
             {
                 WatcherChangeTypes.Created => EventType.Created,
@@ -45,6 +48,7 @@ namespace DirectoryMonitor.Services
             };
 
             // Get applicable rules (by event type and by WatchedPathId if provided)
+
             var applicableRules = _rules
                 .Where(r => r.IsActive && r.EventType == eventType)
                 .ToList();
@@ -130,30 +134,97 @@ namespace DirectoryMonitor.Services
             switch (action.ActionType)
             {
                 case ActionType.Notification:
-                    var title = parameters.GetValueOrDefault("Title")?.ToString() ?? "Directory Monitor";
-                    var message = parameters.GetValueOrDefault("Message")?.ToString() ?? string.Empty;
-                    await ShowNotificationAsync(title, message);
+                    var titleTemplate = parameters.GetValueOrDefault("Title")?.ToString() ?? "Directory Monitor";
+                    var messageTemplate = parameters.GetValueOrDefault("Message")?.ToString() ?? string.Empty;
+                    var title = ReplaceVariables(titleTemplate, args);
+                    var message = ReplaceVariables(messageTemplate, args);
+                    _notificationService.ShowToast(title, message);
                     break;
 
                 case ActionType.RunProgram:
                     var programPath = parameters.GetValueOrDefault("ProgramPath")?.ToString() ?? string.Empty;
-                    var arguments = parameters.GetValueOrDefault("Arguments")?.ToString() ?? string.Empty;
+                    var argumentsTemplate = parameters.GetValueOrDefault("Arguments")?.ToString() ?? string.Empty;
+                    var arguments = ReplaceVariables(argumentsTemplate, args);
                     await RunProgramAsync(programPath, arguments);
                     break;
 
                 case ActionType.CopyFile:
-                    var destFolder = parameters.GetValueOrDefault("DestinationFolder")?.ToString() ?? string.Empty;
+                    var sourceTemplate = parameters.GetValueOrDefault("SourcePath")?.ToString() ?? "{FilePath}";
+                    var destTemplate = parameters.GetValueOrDefault("DestinationPath")?.ToString() ?? "";
                     var overwrite = parameters.GetValueOrDefault("Overwrite") as bool? ?? false;
-                    await CopyFileAsync(args.FullPath, destFolder, overwrite);
+
+                    var sourcePath = ReplaceVariables(sourceTemplate, args);
+                    var destPath = ReplaceVariables(destTemplate, args);
+
+                    await CopyFileAsync(sourcePath, destPath, overwrite);
+                    break;
+
+                case ActionType.DeleteFile:
+                    var filePathTemplate = parameters.GetValueOrDefault("FilePath")?.ToString() ?? "{FilePath}";
+                    var filePath = ReplaceVariables(filePathTemplate, args);
+                    await DeleteFileAsync(filePath);
+                    break;
+                case ActionType.MoveFile:
+                    var moveSourceTemplate = parameters.GetValueOrDefault("SourcePath")?.ToString() ?? "{FilePath}";
+                    var moveDestTemplate = parameters.GetValueOrDefault("DestinationPath")?.ToString() ?? "";
+                    var moveSource = ReplaceVariables(moveSourceTemplate, args);
+                    var moveDest = ReplaceVariables(moveDestTemplate, args);
+                    await MoveFileAsync(moveSource, moveDest);
+                    break;
+
+                case ActionType.RenameFile:
+                    var renameFilePathTemplate = parameters.GetValueOrDefault("FilePath")?.ToString() ?? "{FilePath}";
+                    var newNameTemplate = parameters.GetValueOrDefault("NewName")?.ToString() ?? "{FileName}_renamed";
+                    var renameFilePath = ReplaceVariables(renameFilePathTemplate, args);
+                    var newName = ReplaceVariables(newNameTemplate, args);
+                    await RenameFileAsync(renameFilePath, newName);
+                    break;
+                case ActionType.CreateDirectory:
+                    var createDirTemplate = parameters.GetValueOrDefault("DirectoryPath")?.ToString() ?? "{DirectoryPath}\\NewFolder";
+                    var createDirPath = ReplaceVariables(createDirTemplate, args);
+                    await CreateDirectoryAsync(createDirPath);
+                    break;
+
+                case ActionType.DeleteDirectory:
+                    var deleteDirTemplate = parameters.GetValueOrDefault("DirectoryPath")?.ToString() ?? "{DirectoryPath}";
+                    var deleteDirPath = ReplaceVariables(deleteDirTemplate, args);
+                    await DeleteDirectoryAsync(deleteDirPath);
                     break;
             }
         }
 
-        private Task ShowNotificationAsync(string title, string message)
+        private string ReplaceVariables(string template, FileSystemEventArgs args)
         {
-            // Will be implemented with INotificationService
-            System.Diagnostics.Debug.WriteLine($"Notification: {title} - {message}");
-            return Task.CompletedTask;
+            var fileName = Path.GetFileName(args.FullPath);
+            var fileNameWithoutExt = Path.GetFileNameWithoutExtension(args.FullPath);
+            var extension = Path.GetExtension(args.FullPath).TrimStart('.');
+            var directory = Path.GetDirectoryName(args.FullPath) ?? "";
+            var eventType = args.ChangeType.ToString();
+            var now = DateTime.Now;
+
+            var result = template
+                .Replace("{FilePath}", args.FullPath)
+                .Replace("{FileName}", fileName)
+                .Replace("{FileNameWithoutExt}", fileNameWithoutExt)
+                .Replace("{Extension}", extension)
+                .Replace("{DirectoryPath}", directory)
+                .Replace("{EventType}", eventType)
+                .Replace("{Timestamp}", now.ToString("yyyy-MM-dd HH:mm:ss"))
+                .Replace("{Date}", now.ToString("yyyy-MM-dd"))
+                .Replace("{Time}", now.ToString("HH:mm:ss"))
+                .Replace("{Year}", now.Year.ToString())
+                .Replace("{Month}", now.Month.ToString())
+                .Replace("{Day}", now.Day.ToString())
+                .Replace("{Hour}", now.Hour.ToString())
+                .Replace("{Minute}", now.Minute.ToString())
+                .Replace("{Second}", now.Second.ToString());
+
+            if (args is RenamedEventArgs renamed)
+            {
+                result = result.Replace("{OldFilePath}", renamed.OldFullPath);
+            }
+
+            return result;
         }
 
         private Task RunProgramAsync(string programPath, string arguments)
@@ -177,20 +248,129 @@ namespace DirectoryMonitor.Services
             return Task.CompletedTask;
         }
 
-        private Task CopyFileAsync(string sourcePath, string destinationFolder, bool overwrite)
+        private Task CopyFileAsync(string sourcePath, string destinationPath, bool overwrite)
         {
             try
             {
-                if (!Directory.Exists(destinationFolder))
-                    Directory.CreateDirectory(destinationFolder);
+                var destDir = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
 
-                var fileName = Path.GetFileName(sourcePath);
-                var destPath = Path.Combine(destinationFolder, fileName);
-                File.Copy(sourcePath, destPath, overwrite);
+                File.Copy(sourcePath, destinationPath, overwrite);
+                Debug.WriteLine($"Copied: {sourcePath} -> {destinationPath}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to copy file: {ex.Message}");
+                Debug.WriteLine($"Failed to copy file: {ex.Message}");
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+
+        private Task DeleteFileAsync(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    System.Diagnostics.Debug.WriteLine($"Deleted file: {filePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to delete file: {ex.Message}");
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+        private Task MoveFileAsync(string sourcePath, string destinationPath)
+        {
+            try
+            {
+                if (!File.Exists(sourcePath))
+                {
+                    Debug.WriteLine($"Source file not found: {sourcePath}");
+                    return Task.CompletedTask;
+                }
+
+                var destDir = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+
+                File.Move(sourcePath, destinationPath);
+                Debug.WriteLine($"Moved: {sourcePath} -> {destinationPath}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to move file: {ex.Message}");
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+
+        private Task RenameFileAsync(string filePath, string newName)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                {
+                    Debug.WriteLine($"File not found: {filePath}");
+                    return Task.CompletedTask;
+                }
+
+                var directory = Path.GetDirectoryName(filePath) ?? "";
+                var newPath = Path.Combine(directory, newName);
+
+                File.Move(filePath, newPath);
+                Debug.WriteLine($"Renamed: {filePath} -> {newPath}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to rename file: {ex.Message}");
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+        private Task CreateDirectoryAsync(string directoryPath)
+        {
+            try
+            {
+                if (!Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                    Debug.WriteLine($"Created directory: {directoryPath}");
+                }
+                else
+                {
+                    Debug.WriteLine($"Directory already exists: {directoryPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to create directory: {ex.Message}");
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+
+        private Task DeleteDirectoryAsync(string directoryPath)
+        {
+            try
+            {
+                if (Directory.Exists(directoryPath))
+                {
+                    Directory.Delete(directoryPath, true); // recursive delete
+                    Debug.WriteLine($"Deleted directory: {directoryPath}");
+                }
+                else
+                {
+                    Debug.WriteLine($"Directory not found: {directoryPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to delete directory: {ex.Message}");
                 throw;
             }
             return Task.CompletedTask;

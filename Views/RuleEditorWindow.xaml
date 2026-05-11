@@ -61,8 +61,13 @@
                     </StackPanel>
 
                     <TreeView x:Name="ConditionsTree" Grid.Row="1" SelectedItemChanged="ConditionsTree_SelectedItemChanged">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <Setter Property="IsExpanded" Value="True"/>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
                         <TreeView.ItemTemplate>
-                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                            <HierarchicalDataTemplate ItemsSource="{Binding Children}" >
                                 <StackPanel Orientation="Horizontal">
                                     <!-- Group -->
                                     <StackPanel Orientation="Horizontal" x:Name="GroupPanel">
@@ -93,6 +98,12 @@
                                         <TextBlock Text="Size: " FontWeight="Bold" Foreground="Red"/>
                                         <TextBlock Text="{Binding DisplayText}"/>
                                     </StackPanel>
+
+                                    <!-- ItemType -->
+                                    <StackPanel Orientation="Horizontal" x:Name="ItemTypePanel">
+                                        <TextBlock Text="Item Type: " FontWeight="Bold" Foreground="Purple"/>
+                                        <TextBlock Text="{Binding DisplayType}"/>
+                                    </StackPanel>
                                 </StackPanel>
 
                                 <HierarchicalDataTemplate.Triggers>
@@ -107,6 +118,9 @@
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding IsSize}" Value="False">
                                         <Setter TargetName="SizePanel" Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsItemType}" Value="False">
+                                        <Setter TargetName="ItemTypePanel" Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                 </HierarchicalDataTemplate.Triggers>
                             </HierarchicalDataTemplate>

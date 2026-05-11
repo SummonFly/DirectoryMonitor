@@ -37,11 +37,21 @@ namespace DirectoryMonitor.Services
 
                 var wrapper = new FileSystemWatcherWrapper(
                     watchedPath.Path,
-                    watchedPath.IncludeSubdirectories
+                    watchedPath.IncludeSubdirectories,
+                    watchedPath.WaitForCreation
                 );
 
                 wrapper.FileEvent += async (s, e) => await OnFileEvent(e, watchedPath.Id);
-                wrapper.Start();
+
+                // Only start if wrapper has an active watcher
+                if (Directory.Exists(watchedPath.Path) || watchedPath.WaitForCreation)
+                {
+                    wrapper.Start();
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Watcher for {watchedPath.Path} not started - directory missing and no wait option");
+                }
 
                 _watchers[watchedPath.Id] = wrapper;
             });
