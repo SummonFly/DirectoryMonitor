@@ -3,6 +3,7 @@ using DirectoryMonitor.Data.Repositories;
 using DirectoryMonitor.Services;
 using DirectoryMonitor.Services.Interfaces;
 using DirectoryMonitor.ViewModels;
+using DirectoryMonitor.Views;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -76,23 +77,6 @@ namespace DirectoryMonitor
             await ruleEngine.ReloadRulesAsync();
         }
 
-        private void InitializeTray()
-        {
-            _trayIcon = new System.Windows.Forms.NotifyIcon
-            {
-                Icon = new System.Drawing.Icon("icon.ico"),
-                Visible = true,
-                Text = "Directory Monitor"
-            };
-
-            var contextMenu = new System.Windows.Forms.ContextMenuStrip();
-            contextMenu.Items.Add("Show", null, (s, args) => ShowMainWindow());
-            contextMenu.Items.Add("Exit", null, (s, args) => Application.Current.Shutdown());
-            _trayIcon.ContextMenuStrip = contextMenu;
-
-            _trayIcon.DoubleClick += (s, args) => ShowMainWindow();
-        }
-
         private void ShowMainWindow()
         {
             var mainWindow = _serviceProvider?.GetRequiredService<MainWindow>();
@@ -112,9 +96,9 @@ namespace DirectoryMonitor
             services.AddScoped<IEventLogRepository, EventLogRepository>();
             services.AddScoped<IRuleRepository, RuleRepository>();
             services.AddScoped<IActionRepository, ActionRepository>();
-            services.AddScoped<IRuleExecutionLogRepository, RuleExecutionLogRepository>();
             services.AddScoped<IRuleActionRepository, RuleActionRepository>();
             services.AddScoped<IWatchedPathRuleRepository, WatchedPathRuleRepository>();
+            services.AddScoped<ISystemLogRepository, SystemLogRepository>();
 
             // Services
             services.AddSingleton<IJournalService, JournalService>();
@@ -122,14 +106,15 @@ namespace DirectoryMonitor
             services.AddSingleton<IWatcherManager, WatcherManager>();
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddSingleton<ISettingsService, SettingsService>();
+            services.AddSingleton<ISystemLogService, SystemLogService>();
 
 
             // ViewModels
             services.AddSingleton<RulesViewModel>();
-            services.AddSingleton<RuleLogViewModel>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<ActionsViewModel>();
             services.AddSingleton<TrayIconViewModel>();
+            services.AddSingleton<LogsViewModel>();
 
 
             // Main window

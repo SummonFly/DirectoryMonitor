@@ -1,13 +1,11 @@
 ﻿using DirectoryMonitor.Helpers;
-using DirectoryMonitor.Services;
 using DirectoryMonitor.Services.Interfaces;
 using DirectoryMonitor.ViewModels;
-using DirectoryMonitor.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using System.Windows;
 
-namespace DirectoryMonitor
+namespace DirectoryMonitor.Views
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -16,15 +14,15 @@ namespace DirectoryMonitor
     {
         private readonly MainWindowViewModel _mainViewModel;
         private readonly RulesViewModel _rulesViewModel;
-        private readonly RuleLogViewModel _ruleLogViewModel;
         private readonly ActionsViewModel _actionsViewModel;
+        private readonly LogsViewModel _logsViewModel;
         private readonly ISettingsService _settingsService;
 
         public MainWindow(
             MainWindowViewModel mainViewModel,
             RulesViewModel rulesViewModel,
-            RuleLogViewModel ruleLogViewModel,
             ActionsViewModel actionsViewModel,
+            LogsViewModel logsViewModel,
             ISettingsService settingsService)
         {
             InitializeComponent();
@@ -33,9 +31,9 @@ namespace DirectoryMonitor
 
             _mainViewModel = mainViewModel;
             _rulesViewModel = rulesViewModel;
-            _ruleLogViewModel = ruleLogViewModel;
             _actionsViewModel = actionsViewModel;
             _settingsService = settingsService;
+            _logsViewModel = logsViewModel;
 
 
             // Set DataContext for main content (Journal and Watched Paths tabs)
@@ -52,16 +50,16 @@ namespace DirectoryMonitor
                 rulesContent.DataContext = _rulesViewModel;
             }
 
-            // Set DataContext for Rule Log tab
-            if (RuleLogTab.Content is FrameworkElement logContent)
-            {
-                logContent.DataContext = _ruleLogViewModel;
-            }
-
             // Set DataContext for Actions Tab
             if (ActionsTab.Content is FrameworkElement actionsContent)
             {
                 actionsContent.DataContext = _actionsViewModel;
+            }
+
+            // Set DataContext for System Logs tab
+            if (SystemLogsTab.Content is FrameworkElement logsContent)
+            {
+                logsContent.DataContext = _logsViewModel;
             }
         }
         protected override void OnClosing(CancelEventArgs e)

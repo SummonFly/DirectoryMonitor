@@ -6,22 +6,25 @@ using DirectoryMonitor.Services.Interfaces;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace DirectoryMonitor.Services
 {
     public class RuleEngine : IRuleEngine
     {
         private readonly IRuleRepository _ruleRepository;
-        private readonly IRuleExecutionLogRepository _logRepository;
         private readonly INotificationService _notificationService;
+        private readonly ISystemLogService _systemLogService;
         private List<Rule> _rules = new();
         private readonly JsonSerializerSettings _jsonSettings;
 
-        public RuleEngine(IRuleRepository ruleRepository, IRuleExecutionLogRepository logRepository, INotificationService notificationService)
+        public RuleEngine(IRuleRepository ruleRepository, 
+            INotificationService notificationService,
+            ISystemLogService systemLogService)
         {
             _ruleRepository = ruleRepository;
-            _logRepository = logRepository;
             _notificationService = notificationService;
+            _systemLogService = systemLogService;
 
             _jsonSettings = new JsonSerializerSettings
             {
@@ -33,6 +36,7 @@ namespace DirectoryMonitor.Services
         public async Task ReloadRulesAsync()
         {
             _rules = await _ruleRepository.GetActiveAsync();
+            await _systemLogService.InfoAsync("RuleEngine", $"Reloaded {_rules.Count} rules");
         }
 
         public async Task EvaluateAndExecuteAsync(FileSystemEventArgs args, int? watchedPathId = null)
@@ -48,10 +52,18 @@ namespace DirectoryMonitor.Services
             };
 
             // Get applicable rules (by event type and by WatchedPathId if provided)
+            var test = await _ruleRepository.GetActiveAsync();
 
             var applicableRules = _rules
                 .Where(r => r.IsActive && r.EventType == eventType)
                 .ToList();
+
+            var details = new StringBuilder();
+            foreach(var r in applicableRules)
+            {
+                details.Append($"Rule: {r.Name} has {r.WatchedPathRules.Count} attached path\n");
+            }
+            await _systemLogService.InfoAsync("RuleEngine", $"Applicable rule has {applicableRules.Count} rules", details.ToString());
 
             // If watchedPathId is provided, filter rules that are linked to this path
             if (watchedPathId.HasValue)
@@ -98,29 +110,26 @@ namespace DirectoryMonitor.Services
 
                         await ExecuteActionAsync(action, args);
                     }
+                    await _systemLogService.DebugAsync("RuleEngine", $"Rule '{rule.Name}' executed", $"Path: {args.FullPath}");
                 }
                 catch (Exception ex)
                 {
                     success = false;
                     errorMessage = ex.Message;
+
+                    // Log to system log
+                    await _systemLogService.ErrorAsync(
+                        "RuleEngine",
+                        $"Rule '{rule.Name}' execution failed",
+                        $"RuleId: {rule.Id}, EventPath: {args.FullPath}, Error: {ex.Message}");
                 }
                 finally
                 {
                     stopwatch.Stop();
 
-                    // Log execution
-                    var logEntry = new RuleExecutionLogEntry
-                    {
-                        RuleId = rule.Id,
-                        RuleName = rule.Name,
-                        EventPath = args.FullPath,
-                        EventType = eventType,
-                        Success = success,
-                        ErrorMessage = errorMessage,
-                        ExecutionTimeMs = (int)stopwatch.ElapsedMilliseconds
-                    };
-
-                    await _logRepository.AddAsync(logEntry);
+                    await _systemLogService.InfoAsync("RuleEngine",
+                    $"Rule '{rule.Name}' executed on {args.FullPath}, Success: {success}, Time: {stopwatch.ElapsedMilliseconds}ms" +
+                    (errorMessage != null ? $", Error: {errorMessage}" : ""));
                 }
             }
         }

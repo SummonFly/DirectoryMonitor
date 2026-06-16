@@ -1,25 +1,29 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DirectoryMonitor.Data.Repositories;
-using DirectoryMonitor.Models.Entities;
+using Microsoft.VisualBasic.Logging;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace DirectoryMonitor.ViewModels
 {
-    public partial class RuleLogViewModel : ObservableObject
+    public partial class LogsViewModel : ObservableObject
     {
-        private readonly IRuleExecutionLogRepository _logRepository;
+        private readonly ISystemLogRepository _logRepository;
 
         [ObservableProperty]
-        private ObservableCollection<RuleExecutionLogEntry> _logs = new();
+        private ObservableCollection<SystemLogEntryViewModel> _logs = new();
 
-        public RuleLogViewModel(IRuleExecutionLogRepository logRepository)
+        public LogsViewModel(ISystemLogRepository logRepository)
         {
             _logRepository = logRepository;
             LoadLogsCommand = new AsyncRelayCommand(LoadLogsAsync);
             ClearLogsCommand = new AsyncRelayCommand(ClearLogsAsync);
-
             LoadLogsCommand.Execute(null);
         }
 
@@ -28,22 +32,21 @@ namespace DirectoryMonitor.ViewModels
 
         private async Task LoadLogsAsync()
         {
-            var logs = await _logRepository.GetRecentAsync(200);
+            var logs = await _logRepository.GetRecentAsync(500);
             Logs.Clear();
-            foreach (var log in logs)
+            foreach (var log in logs.OrderByDescending(l => l.Timestamp))
             {
-                Logs.Add(log);
+                Logs.Add(new SystemLogEntryViewModel(log));
             }
         }
 
         private async Task ClearLogsAsync()
         {
-            var result = MessageBox.Show("Clear all rule execution logs?", "Confirm",
+            var result = MessageBox.Show("Clear all system logs?", "Confirm",
                 MessageBoxButton.YesNo, MessageBoxImage.Question);
-
             if (result == MessageBoxResult.Yes)
             {
-                await _logRepository.DeleteOldAsync(DateTime.UtcNow);
+                await _logRepository.DeleteAllAsync();
                 await LoadLogsAsync();
             }
         }

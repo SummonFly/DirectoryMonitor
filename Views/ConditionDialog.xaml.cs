@@ -57,7 +57,7 @@ namespace DirectoryMonitor.Views
         private void CreateExtensionUI()
         {
             _extensionsList = new ListBox { Height = 100, Margin = new Thickness(0, 5, 0, 5) };
-            _extensionInput = new TextBox { Margin = new Thickness(0, 5, 0, 5) };
+            _extensionInput = new TextBox { Margin = new Thickness(0, 5, 0, 5), IsEnabled = true};
             var addButton = new Button { Content = "Add", Width = 60, Margin = new Thickness(0, 5, 0, 5) };
 
             addButton.Click += (s, e) =>

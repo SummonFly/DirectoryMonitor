@@ -1,5 +1,6 @@
 ﻿using DirectoryMonitor.Models.Enums;
 using Newtonsoft.Json;
+using System.ComponentModel.Design.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -53,11 +54,13 @@ namespace DirectoryMonitor.Views
             var parameters = JsonConvert.DeserializeObject<Dictionary<string, object>>(parametersJson)
                              ?? new Dictionary<string, object>();
 
+            var textBoxStyle = (Style)App.Current.FindResource(typeof(TextBox));
+            var textBlockStyle = (Style)App.Current.FindResource(typeof(TextBlock));
             switch (actionType)
             {
                 case ActionType.Notification:
-                    _titleBox = new TextBox { Text = parameters.GetValueOrDefault("Title")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5) };
-                    _messageBox = new TextBox { Text = parameters.GetValueOrDefault("Message")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5), Height = 60, TextWrapping = TextWrapping.Wrap };
+                    _titleBox = new TextBox { Text = parameters.GetValueOrDefault("Title")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5), Style = textBoxStyle};
+                    _messageBox = new TextBox { Text = parameters.GetValueOrDefault("Message")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5), Height = 60, TextWrapping = TextWrapping.Wrap, Style = textBoxStyle };
                     ParametersPanel.Children.Clear();
                     ParametersPanel.Children.Add(new Label { Content = "Title:", FontWeight = FontWeights.Bold });
                     ParametersPanel.Children.Add(_titleBox);
@@ -69,13 +72,14 @@ namespace DirectoryMonitor.Views
                         Foreground = System.Windows.Media.Brushes.Gray,
                         Margin = new Thickness(0, 5, 0, 0),
                         FontSize = 11,
-                        TextWrapping = TextWrapping.Wrap
+                        TextWrapping = TextWrapping.Wrap,
+                        Style = textBlockStyle
                     });
                     break;
 
                 case ActionType.RunProgram:
-                    _programPathBox = new TextBox { Text = parameters.GetValueOrDefault("ProgramPath")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5) };
-                    _argumentsBox = new TextBox { Text = parameters.GetValueOrDefault("Arguments")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5) };
+                    _programPathBox = new TextBox { Text = parameters.GetValueOrDefault("ProgramPath")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5), Style = textBoxStyle };
+                    _argumentsBox = new TextBox { Text = parameters.GetValueOrDefault("Arguments")?.ToString() ?? "", Margin = new Thickness(0, 5, 0, 5), Style = textBoxStyle };
                     ParametersPanel.Children.Clear();
                     ParametersPanel.Children.Add(new Label { Content = "Program Path:", FontWeight = FontWeights.Bold });
                     ParametersPanel.Children.Add(_programPathBox);
@@ -87,7 +91,8 @@ namespace DirectoryMonitor.Views
                         Foreground = System.Windows.Media.Brushes.Gray,
                         Margin = new Thickness(0, 5, 0, 0),
                         FontSize = 11,
-                        TextWrapping = TextWrapping.Wrap
+                        TextWrapping = TextWrapping.Wrap,
+                        Style = textBlockStyle
                     });
                     break;
 
@@ -136,7 +141,8 @@ namespace DirectoryMonitor.Views
                         Text = _actionVariables,
                         Foreground = System.Windows.Media.Brushes.Gray,
                         Margin = new Thickness(0, 5, 0, 0),
-                        FontSize = 11
+                        FontSize = 11,
+                        Style = textBlockStyle
                     });
                     break;
                 case ActionType.MoveFile:
@@ -160,7 +166,8 @@ namespace DirectoryMonitor.Views
                         Text = _actionVariables,
                         Foreground = System.Windows.Media.Brushes.Gray,
                         Margin = new Thickness(0, 5, 0, 0),
-                        FontSize = 11
+                        FontSize = 11,
+                        Style = textBlockStyle
                     });
                     break;
 
@@ -185,7 +192,8 @@ namespace DirectoryMonitor.Views
                         Text = _actionVariables,
                         Foreground = System.Windows.Media.Brushes.Gray,
                         Margin = new Thickness(0, 5, 0, 0),
-                        FontSize = 11
+                        FontSize = 11,
+                        Style = textBlockStyle
                     });
                     break;
                 case ActionType.CreateDirectory:
@@ -202,7 +210,8 @@ namespace DirectoryMonitor.Views
                         Text = _actionVariables,
                         Foreground = System.Windows.Media.Brushes.Gray,
                         Margin = new Thickness(0, 5, 0, 0),
-                        FontSize = 11
+                        FontSize = 11,
+                        Style = textBlockStyle
                     });
                     break;
 
@@ -220,7 +229,8 @@ namespace DirectoryMonitor.Views
                         Text = _actionVariables,
                         Foreground = System.Windows.Media.Brushes.Gray,
                         Margin = new Thickness(0, 5, 0, 0),
-                        FontSize = 11
+                        FontSize = 11,
+                        Style = textBlockStyle
                     });
                     break;
             }

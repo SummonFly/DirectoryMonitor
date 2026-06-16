@@ -167,6 +167,8 @@ namespace DirectoryMonitor.ViewModels
                     await _watchedPathRuleRepository.UpdateRulesForWatchedPathAsync(newPath.Id, dialog.SelectedRuleIds);
                 }
 
+                await _ruleEngine.ReloadRulesAsync();
+
                 // Start watcher if active
                 if (newPath.IsActive)
                 {
@@ -190,6 +192,8 @@ namespace DirectoryMonitor.ViewModels
                 // Remove from database
                 await _watchedPathRepository.DeleteAsync(SelectedWatchedPath.Model.Id);
 
+                await _ruleEngine.ReloadRulesAsync();
+
                 // Refresh UI
                 await LoadPathsAsync();
             }
@@ -206,7 +210,7 @@ namespace DirectoryMonitor.ViewModels
             {
                 await _watchedPathRepository.UpdateAsync(dialog.UpdatedWatchedPath);
                 await LoadPathsAsync();
-
+                await _ruleEngine.ReloadRulesAsync();
                 // Restart watcher if needed
                 await _watcherManager.StopWatchingAsync(dialog.UpdatedWatchedPath.Id);
                 if (dialog.UpdatedWatchedPath.IsActive)

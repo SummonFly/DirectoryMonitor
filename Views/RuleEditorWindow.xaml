@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Rule Editor" Height="650" Width="850"
         WindowStartupLocation="CenterOwner"
-        Background="#F5F5F5"
+        Style="{DynamicResource WindowStyle}"
         xmlns:local="clr-namespace:DirectoryMonitor.ViewModels"
         xmlns:converters="clr-namespace:DirectoryMonitor.Converters">
 
@@ -24,14 +24,14 @@
 
         <!-- Name -->
         <Label Grid.Row="0" Content="Rule Name:" FontWeight="Bold" Margin="0,0,0,5"/>
-        <TextBox x:Name="NameBox" Grid.Row="1" Margin="0,0,0,10" Height="30"/>
+        <TextBox x:Name="NameBox" Style="{DynamicResource Input}" Grid.Row="1" Margin="0,0,0,10" Height="30"/>
 
         <!-- Priority and Event Type -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Margin="0,0,20,0">
                 <Label Content="Priority:" FontWeight="Bold" VerticalAlignment="Center"/>
-                <TextBox x:Name="PriorityBox" Width="80" Margin="5,0,0,0" Height="25" Text="100"/>
-            </StackPanel>
+                <TextBox x:Name="PriorityBox" Style="{DynamicResource Input}"  Width="80" Margin="5,0,0,0" Height="25" Text="100"/>
+            </StackPanel> 
             <StackPanel Orientation="Horizontal">
                 <Label Content="Event Type:" FontWeight="Bold" VerticalAlignment="Center"/>
                 <ComboBox x:Name="EventTypeCombo" Width="120" Margin="5,0,0,0" Height="25">
@@ -44,9 +44,9 @@
         </StackPanel>
 
         <!-- Tab Control -->
-        <TabControl Grid.Row="3" Margin="0,0,0,10">
+        <TabControl Grid.Row="3" Margin="0,0,0,10" Style="{DynamicResource PrettyTabControl}">
             <!-- Conditions Tab -->
-            <TabItem Header="Conditions">
+            <TabItem Header="Conditions" Style="{DynamicResource PrettyTabItem}">
                 <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -130,7 +130,7 @@
             </TabItem>
 
             <!-- Actions Tab -->
-            <TabItem Header="Actions">
+            <TabItem Header="Actions" Style="{DynamicResource PrettyTabItem}">
                 <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -143,7 +143,15 @@
                     </StackPanel>
 
                     <DataGrid x:Name="ActionsGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
-                              SelectionMode="Single" AlternatingRowBackground="#FAFAFA">
+                              SelectionMode="Single" Background="{DynamicResource BackgroundSecondary}">
+                        <DataGrid.ColumnHeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="{DynamicResource BackgroundSecondary}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderPrimary}"/>
+                                <Setter Property="BorderThickness" Value="2"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BackgroundPrimary}"/>
+                            </Style>
+                        </DataGrid.ColumnHeaderStyle>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
                             <DataGridTextColumn Header="Type" Binding="{Binding ActionType}" Width="120"/>

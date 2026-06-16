@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Add Watched Path" Height="480" Width="600"
         WindowStartupLocation="CenterOwner"
-        Background="#F5F5F5">
+        Style="{DynamicResource WindowStyle}">
 
     <Grid Margin="10">
         <Grid.RowDefinitions>

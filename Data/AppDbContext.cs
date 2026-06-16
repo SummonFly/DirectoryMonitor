@@ -13,11 +13,11 @@ namespace DirectoryMonitor.Data
         public DbSet<EventLogEntry> EventLogEntries { get; set; }
 
         public DbSet<Models.Entities.Rule> Rules { get; set; }
-        public DbSet<RuleExecutionLogEntry> RuleExecutionLogs { get; set; }
 
         public DbSet<Models.Entities.Action> Actions { get; set; }
         public DbSet<WatchedPathRule> WatchedPathRules { get; set; }
         public DbSet<RuleAction> RuleActions { get; set; }
+        public DbSet<SystemLogEntry> SystemLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,17 +41,6 @@ namespace DirectoryMonitor.Data
             modelBuilder.Entity<Models.Entities.Action>()
                 .Property(a => a.ActionType)
                 .HasConversion<string>();
-
-            modelBuilder.Entity<RuleExecutionLogEntry>()
-                .Property(r => r.EventType)
-                .HasConversion<string>();
-
-            // Indexes for RuleExecutionLog
-            modelBuilder.Entity<RuleExecutionLogEntry>()
-                .HasIndex(r => r.Timestamp);
-
-            modelBuilder.Entity<RuleExecutionLogEntry>()
-                .HasIndex(r => r.RuleId);
 
             // EventLogEntry -> WatchedPath (set NULL on delete)
             modelBuilder.Entity<EventLogEntry>()

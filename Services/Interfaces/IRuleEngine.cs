@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using DirectoryMonitor.Models.Entities;
+using System.IO;
 
 namespace DirectoryMonitor.Services.Interfaces
 {
