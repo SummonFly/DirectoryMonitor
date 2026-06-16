@@ -17,6 +17,32 @@ namespace DirectoryMonitor.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.26");
 
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.Action", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParametersJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Actions");
+                });
+
             modelBuilder.Entity("DirectoryMonitor.Models.Entities.EventLogEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -51,6 +77,100 @@ namespace DirectoryMonitor.Migrations
                     b.ToTable("EventLogEntries");
                 });
 
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.Rule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Rules");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.RuleAction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ActionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RuleId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActionId");
+
+                    b.HasIndex("RuleId", "ActionId")
+                        .IsUnique();
+
+                    b.ToTable("RuleActions");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.SystemLogEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("RuleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("WatchedPathId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemLogs");
+                });
+
             modelBuilder.Entity("DirectoryMonitor.Models.Entities.WatchedPath", b =>
                 {
                     b.Property<int>("Id")
@@ -58,9 +178,6 @@ namespace DirectoryMonitor.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FileExtensionsFilter")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IncludeSubdirectories")
@@ -76,9 +193,33 @@ namespace DirectoryMonitor.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("WaitForCreation")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.ToTable("WatchedPaths");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.WatchedPathRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RuleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WatchedPathId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RuleId");
+
+                    b.HasIndex("WatchedPathId");
+
+                    b.ToTable("WatchedPathRules");
                 });
 
             modelBuilder.Entity("DirectoryMonitor.Models.Entities.EventLogEntry", b =>
@@ -89,6 +230,61 @@ namespace DirectoryMonitor.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("WatchedPath");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.RuleAction", b =>
+                {
+                    b.HasOne("DirectoryMonitor.Models.Entities.Action", "Action")
+                        .WithMany("RuleActions")
+                        .HasForeignKey("ActionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DirectoryMonitor.Models.Entities.Rule", "Rule")
+                        .WithMany("RuleActions")
+                        .HasForeignKey("RuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Action");
+
+                    b.Navigation("Rule");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.WatchedPathRule", b =>
+                {
+                    b.HasOne("DirectoryMonitor.Models.Entities.Rule", "Rule")
+                        .WithMany("WatchedPathRules")
+                        .HasForeignKey("RuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DirectoryMonitor.Models.Entities.WatchedPath", "WatchedPath")
+                        .WithMany("WatchedPathRules")
+                        .HasForeignKey("WatchedPathId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rule");
+
+                    b.Navigation("WatchedPath");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.Action", b =>
+                {
+                    b.Navigation("RuleActions");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.Rule", b =>
+                {
+                    b.Navigation("RuleActions");
+
+                    b.Navigation("WatchedPathRules");
+                });
+
+            modelBuilder.Entity("DirectoryMonitor.Models.Entities.WatchedPath", b =>
+                {
+                    b.Navigation("WatchedPathRules");
                 });
 #pragma warning restore 612, 618
         }

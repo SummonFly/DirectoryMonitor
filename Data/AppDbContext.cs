@@ -12,13 +12,12 @@ namespace DirectoryMonitor.Data
         public DbSet<WatchedPath> WatchedPaths { get; set; }
         public DbSet<EventLogEntry> EventLogEntries { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder.UseSqlite("Data Source=monitor.db");
-            }
-        }
+        public DbSet<Models.Entities.Rule> Rules { get; set; }
+
+        public DbSet<Models.Entities.Action> Actions { get; set; }
+        public DbSet<WatchedPathRule> WatchedPathRules { get; set; }
+        public DbSet<RuleAction> RuleActions { get; set; }
+        public DbSet<SystemLogEntry> SystemLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -30,11 +29,64 @@ namespace DirectoryMonitor.Data
             modelBuilder.Entity<EventLogEntry>()
                 .HasIndex(e => e.Path);
 
+            // Convert enums to string
+            modelBuilder.Entity<EventLogEntry>()
+                .Property(e => e.EventType)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Models.Entities.Rule>()
+                .Property(r => r.EventType)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Models.Entities.Action>()
+                .Property(a => a.ActionType)
+                .HasConversion<string>();
+
+            // EventLogEntry -> WatchedPath (set NULL on delete)
             modelBuilder.Entity<EventLogEntry>()
                 .HasOne(e => e.WatchedPath)
                 .WithMany()
                 .HasForeignKey(e => e.WatchedPathId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // WatchedPathRule configuration
+            modelBuilder.Entity<WatchedPathRule>()
+                .HasOne(wpr => wpr.WatchedPath)
+                .WithMany(wp => wp.WatchedPathRules)
+                .HasForeignKey(wpr => wpr.WatchedPathId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<WatchedPathRule>()
+                .HasOne(wpr => wpr.Rule)
+                .WithMany(r => r.WatchedPathRules)
+                .HasForeignKey(wpr => wpr.RuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // RuleAction configuration
+            modelBuilder.Entity<RuleAction>()
+                .HasOne(ra => ra.Rule)
+                .WithMany(r => r.RuleActions)
+                .HasForeignKey(ra => ra.RuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RuleAction>()
+                .HasOne(ra => ra.Action)
+                .WithMany(a => a.RuleActions)
+                .HasForeignKey(ra => ra.ActionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RuleAction>()
+                .HasIndex(ra => new { ra.RuleId, ra.ActionId })
+                .IsUnique();
         }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlite("Data Source=monitor.db");
+            }
+        }
+
     }
 }

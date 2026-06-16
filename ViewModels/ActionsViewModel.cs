@@ -1,0 +1,128 @@
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DirectoryMonitor.Data.Repositories;
+using DirectoryMonitor.Models.Entities;
+using DirectoryMonitor.Views;
+using System.Collections.ObjectModel;
+using System.Windows;
+
+namespace DirectoryMonitor.ViewModels
+{
+    public partial class ActionsViewModel : ObservableObject
+    {
+        private readonly IActionRepository _actionRepository;
+
+        [ObservableProperty]
+        private Models.Entities.Action? _selectedAction;
+
+        [ObservableProperty]
+        private ObservableCollection<ActionItemViewModel> _actions = new();
+
+        public ActionsViewModel(IActionRepository actionRepository)
+        {
+            _actionRepository = actionRepository;
+
+            LoadActionsCommand = new AsyncRelayCommand(LoadActionsAsync);
+            AddActionCommand = new AsyncRelayCommand(AddActionAsync);
+            EditActionCommand = new AsyncRelayCommand(EditActionAsync, () => SelectedAction != null);
+            DeleteActionCommand = new AsyncRelayCommand(DeleteActionAsync, () => SelectedAction != null);
+            EditActionWithParameterCommand = new AsyncRelayCommand<ActionItemViewModel>(EditActionWithParameterAsync);
+            DeleteActionWithParameterCommand = new AsyncRelayCommand<ActionItemViewModel>(DeleteActionWithParameterAsync);
+
+            LoadActionsCommand.Execute(null);
+        }
+
+        public IAsyncRelayCommand LoadActionsCommand { get; }
+        public IAsyncRelayCommand AddActionCommand { get; }
+        public IAsyncRelayCommand EditActionCommand { get; }
+        public IAsyncRelayCommand DeleteActionCommand { get; }
+        public IAsyncRelayCommand<ActionItemViewModel> EditActionWithParameterCommand { get; }
+        public IAsyncRelayCommand<ActionItemViewModel> DeleteActionWithParameterCommand { get; }
+
+        partial void OnSelectedActionChanged(Models.Entities.Action? value)
+        {
+            EditActionCommand.NotifyCanExecuteChanged();
+            DeleteActionCommand.NotifyCanExecuteChanged();
+        }
+
+        private async Task LoadActionsAsync()
+        {
+            var actions = await _actionRepository.GetAllAsync();
+            Actions.Clear();
+            foreach (var action in actions)
+            {
+                Actions.Add(new ActionItemViewModel(action));
+            }
+        }
+
+        private async Task AddActionAsync()
+        {
+            var dialog = new ActionEditorWindow();
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var newAction = dialog.GetAction();
+                await _actionRepository.AddAsync(newAction);
+                await LoadActionsAsync();
+            }
+        }
+
+        private async Task EditActionAsync()
+        {
+            if (SelectedAction == null) return;
+
+            var dialog = new ActionEditorWindow(SelectedAction);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var updatedAction = dialog.GetAction();
+                updatedAction.Id = SelectedAction.Id;
+                updatedAction.CreatedAt = SelectedAction.CreatedAt;
+                await _actionRepository.UpdateAsync(updatedAction);
+                await LoadActionsAsync();
+            }
+        }
+
+        private async Task DeleteActionAsync()
+        {
+            if (SelectedAction == null) return;
+
+            var result = MessageBox.Show($"Delete action '{SelectedAction.Name}'?",
+                "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                await _actionRepository.DeleteAsync(SelectedAction.Id);
+                await LoadActionsAsync();
+            }
+        }
+
+        private async Task EditActionWithParameterAsync(ActionItemViewModel? item)
+        {
+            if (item == null) return;
+            var dialog = new ActionEditorWindow(item.Model);
+            dialog.Owner = Application.Current.MainWindow;
+            if (dialog.ShowDialog() == true)
+            {
+                var updatedAction = dialog.GetAction();
+                updatedAction.Id = item.Model.Id;
+                updatedAction.CreatedAt = item.Model.CreatedAt;
+                await _actionRepository.UpdateAsync(updatedAction);
+                await LoadActionsAsync();
+            }
+        }
+
+        private async Task DeleteActionWithParameterAsync(ActionItemViewModel? item)
+        {
+            if (item == null) return;
+            var result = MessageBox.Show($"Delete action '{item.Name}'?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                await _actionRepository.DeleteAsync(item.Model.Id);
+                await LoadActionsAsync();
+            }
+        }
+    }
+}

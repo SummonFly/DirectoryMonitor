@@ -1,0 +1,33 @@
+﻿<Window x:Class="DirectoryMonitor.Views.ConditionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Condition Editor" Width="450" Height="400"
+        Style="{DynamicResource WindowStyle}"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Content="Condition Type:" FontWeight="Bold"/>
+        <ComboBox x:Name="ConditionTypeCombo" Grid.Row="1" Margin="0,0,0,10" SelectionChanged="ConditionTypeCombo_SelectionChanged">
+            <ComboBoxItem Content="Extension"/>
+            <ComboBoxItem Content="File Name"/>
+            <ComboBoxItem Content="Size"/>
+            <ComboBoxItem Content="Item Type"/>
+        </ComboBox>
+
+        <StackPanel x:Name="ParametersPanel" Grid.Row="2" Grid.RowSpan="3" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="80" Margin="0,0,5,0" Click="OkButton_Click"/>
+            <Button Content="Cancel" Width="80" Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

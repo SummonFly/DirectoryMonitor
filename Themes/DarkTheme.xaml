@@ -1,0 +1,12 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <SolidColorBrush x:Key="BackgroundPrimary" Color="{StaticResource DeepBlueColor}"/>
+    <SolidColorBrush x:Key="BackgroundSecondary" Color="{StaticResource OceanBlueColor}"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="{StaticResource PaleBlueColor}"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="{StaticResource LightBlueColor}"/>
+    <SolidColorBrush x:Key="AccentPrimary" Color="{StaticResource SkyBlueColor}"/>
+    <SolidColorBrush x:Key="BorderPrimary" Color="LightGray"/>
+    <!--<SolidColorBrush x:Key="BorderPrimary" Color="{DynamicResource SageGreenColor}"/>-->
+
+</ResourceDictionary>

@@ -1,0 +1,56 @@
+﻿<UserControl x:Class="DirectoryMonitor.Views.SystemLogCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border Margin="0,4,0,4" Padding="10" CornerRadius="4" Background="{DynamicResource BackgroundSecondary}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Main row -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Level Icon -->
+                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14" 
+                        Background="{Binding LevelColor}">
+                    <TextBlock Text="{Binding LevelIcon}" 
+                               FontSize="14" 
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                </Border>
+
+                <!-- Message -->
+                <StackPanel Grid.Column="1" Margin="10,0">
+                    <TextBlock Text="{Binding Message}" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}" Foreground="{DynamicResource TextSecondary}"/>
+                        <TextBlock Text="{Binding Source}" Foreground="{DynamicResource TextSecondary}" Margin="10,0,0,0"/>
+                        <TextBlock Text="{Binding Level}" Foreground="{Binding LevelColor}" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Expand button -->
+                <Button Grid.Column="2" Width="24" Height="24" 
+                        Content="{Binding IsExpanded, Converter={StaticResource ExpandCollapse}}"
+                        Command="{Binding ToggleExpandCommand}"
+                        Background="Transparent" BorderBrush="Transparent" BorderThickness="0"
+                        Visibility="{Binding HasDetails, Converter={StaticResource BoolToVisibility}}"/>
+            </Grid>
+
+            <!-- Details (expanded) -->
+            <Border Grid.Row="1" Margin="0,8,0,0" Padding="8" CornerRadius="4" 
+                    Background="{DynamicResource BackgroundPrimary}"
+                    Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{Binding Details}" Foreground="{DynamicResource AccentPrimary}" TextWrapping="Wrap"/>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>
